@@ -119,6 +119,8 @@ class TRTModule(torch.nn.Module):
         if not dynamic:
             self.output_tensor = [torch.empty(info.shape, dtype=info.dtype, device=self.device) for info in out_info]
         self.is_dynamic = dynamic
+        self.inp_info = inp_info
+        self.out_infp = out_info
 
     def forward(self, *inputs):
 
