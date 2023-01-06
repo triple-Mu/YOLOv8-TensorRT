@@ -1,4 +1,4 @@
-from models import TRTModule
+from models import TRTModule, TRTProfilerV0
 from pathlib import Path
 import cv2
 import argparse
@@ -112,10 +112,24 @@ def parse_args():
         '--out-dir', type=str, default='./output', help='Path to output file')
     parser.add_argument(
         '--device', type=str, default='cuda:0', help='TensorRT infer device')
+    parser.add_argument(
+        '--profile', action='store_true', help='Profile TensorRT engine')
     args = parser.parse_args()
     return args
 
 
+def profile(args):
+    device = torch.device(args.device)
+    Engine = TRTModule(args.engine, device)
+    profiler = TRTProfilerV0()
+    Engine.set_profiler(profiler)
+    random_input = torch.randn(Engine.inp_info[0].shape, device=device)
+    _ = Engine(random_input)
+
+
 if __name__ == '__main__':
     args = parse_args()
-    main(args)
+    if args.profile:
+        profile(args)
+    else:
+        main(args)
