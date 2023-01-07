@@ -1,25 +1,39 @@
-from models import TRTModule, TRTProfilerV0
-from pathlib import Path
-import cv2
 import argparse
+import os
+import random
+from pathlib import Path
+
+import cv2
 import numpy as np
 import torch
-import random
+
+from models import TRTModule, TRTProfilerV0
+
+os.environ['CUDA_MODULE_LOADING'] = 'LAZY'
 
 random.seed(0)
 
-SUFFIXS = ('.bmp', '.dng', '.jpeg', '.jpg', '.mpo', '.png', '.tif', '.tiff', '.webp', '.pfm')
-CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
-           'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
-           'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-           'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard',
-           'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
-           'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-           'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone',
-           'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear',
-           'hair drier', 'toothbrush')
+SUFFIXS = ('.bmp', '.dng', '.jpeg', '.jpg', '.mpo', '.png', '.tif', '.tiff',
+           '.webp', '.pfm')
+CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
+           'train', 'truck', 'boat', 'traffic light', 'fire hydrant',
+           'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog',
+           'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe',
+           'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
+           'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat',
+           'baseball glove', 'skateboard', 'surfboard', 'tennis racket',
+           'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl',
+           'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot',
+           'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
+           'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop',
+           'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven',
+           'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase',
+           'scissors', 'teddy bear', 'hair drier', 'toothbrush')
 
-COLORS = {cls: [random.randint(0, 255) for _ in range(3)] for i, cls in enumerate(CLASSES)}
+COLORS = {
+    cls: [random.randint(0, 255) for _ in range(3)]
+    for i, cls in enumerate(CLASSES)
+}
 
 
 def letterbox(im, new_shape=(640, 640), color=(114, 114, 114)):
@@ -33,7 +47,8 @@ def letterbox(im, new_shape=(640, 640), color=(114, 114, 114)):
 
     # Compute padding
     new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
-    dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[1]  # wh padding
+    dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[
+        1]  # wh padding
 
     dw /= 2  # divide padding into 2 sides
     dh /= 2
@@ -42,8 +57,16 @@ def letterbox(im, new_shape=(640, 640), color=(114, 114, 114)):
         im = cv2.resize(im, new_unpad, interpolation=cv2.INTER_LINEAR)
     top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
     left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
-    im = cv2.copyMakeBorder(im, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # add border
-    return im, np.array([r, r, r, r], dtype=np.float32), np.array([dw, dh, dw, dh], dtype=np.float32)
+    im = cv2.copyMakeBorder(im,
+                            top,
+                            bottom,
+                            left,
+                            right,
+                            cv2.BORDER_CONSTANT,
+                            value=color)  # add border
+    return im, np.array([r, r, r, r],
+                        dtype=np.float32), np.array([dw, dh, dw, dh],
+                                                    dtype=np.float32)
 
 
 def blob(im):
@@ -62,7 +85,9 @@ def main(args):
     save_path = Path(args.out_dir)
 
     if images_path.is_dir():
-        images = [i.absolute() for i in images_path.iterdir() if i.suffix in SUFFIXS]
+        images = [
+            i.absolute() for i in images_path.iterdir() if i.suffix in SUFFIXS
+        ]
     else:
         assert images_path.suffix in SUFFIXS
         images = [images_path.absolute()]
@@ -92,9 +117,11 @@ def main(args):
             cls = CLASSES[cls_id]
             color = COLORS[cls]
             cv2.rectangle(draw, bbox[:2], bbox[2:], color, 2)
-            cv2.putText(draw, f'{cls}:{score:.3f}', (bbox[0], bbox[1] - 2),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                        [225, 255, 255], thickness=2)
+            cv2.putText(draw,
+                        f'{cls}:{score:.3f}', (bbox[0], bbox[1] - 2),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.75, [225, 255, 255],
+                        thickness=2)
         if args.show:
             cv2.imshow('result', draw)
             cv2.waitKey(0)
@@ -106,14 +133,20 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--engine', type=str, help='Engine file')
     parser.add_argument('--imgs', type=str, help='Images file')
-    parser.add_argument(
-        '--show', action='store_true', help='Show the detection results')
-    parser.add_argument(
-        '--out-dir', type=str, default='./output', help='Path to output file')
-    parser.add_argument(
-        '--device', type=str, default='cuda:0', help='TensorRT infer device')
-    parser.add_argument(
-        '--profile', action='store_true', help='Profile TensorRT engine')
+    parser.add_argument('--show',
+                        action='store_true',
+                        help='Show the detection results')
+    parser.add_argument('--out-dir',
+                        type=str,
+                        default='./output',
+                        help='Path to output file')
+    parser.add_argument('--device',
+                        type=str,
+                        default='cuda:0',
+                        help='TensorRT infer device')
+    parser.add_argument('--profile',
+                        action='store_true',
+                        help='Profile TensorRT engine')
     args = parser.parse_args()
     return args
 

@@ -2,3 +2,4 @@ numpy
 opencv-python
 torch
 # tensorrt
+# ultralytics -i https://test.pypi.org/simple
