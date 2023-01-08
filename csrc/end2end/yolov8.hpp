@@ -2,21 +2,9 @@
 // Created by ubuntu on 1/8/23.
 //
 #include "detect_config.hpp"
-#include <iostream>
 #include <fstream>
-#include <vector>
-#include <dirent.h>
-#include <chrono>
-#include <string>
-#include <array>
 #include <opencv2/opencv.hpp>
-#include <opencv2/core/core.hpp>
-#include <opencv2/dnn/dnn.hpp>
-#include <opencv2/imgproc.hpp>
-#include <cuda_runtime_api.h>
-#include "NvInfer.h"
 #include "NvInferPlugin.h"
-#include "NvInferRuntimeCommon.h"
 
 static const int INPUT_W = 640;
 static const int INPUT_H = 640;
@@ -129,8 +117,6 @@ const unsigned int COLORS[80][3] = {
 	{ 128, 128, 0 }
 };
 
-
-
 struct Object
 {
 	cv::Rect_<float> rect;
@@ -150,8 +136,8 @@ public:
 	void postprocess(std::vector<Object>& objs);
 
 	size_t in_size = 1 * 3 * INPUT_W * INPUT_H;
-	float w;
-	float h;
+	float w = INPUT_W;
+	float h = INPUT_H;
 	float ratio = 1.0f;
 	float dw = 0.f;
 	float dh = 0.f;
@@ -272,8 +258,8 @@ void YOLOv8::make_pipe(bool warmup)
 
 void YOLOv8::copy_from_Mat(const cv::Mat& image)
 {
-	float height = image.rows;
-	float width = image.cols;
+	float height = (float)image.rows;
+	float width = (float)image.cols;
 
 	float r = std::min(INPUT_H / height, INPUT_W / width);
 
