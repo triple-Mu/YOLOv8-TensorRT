@@ -1,3 +1,4 @@
+from models import TRTModule, TRTProfilerV0  # isort:skip
 import argparse
 import os
 import random
@@ -6,8 +7,6 @@ from pathlib import Path
 import cv2
 import numpy as np
 import torch
-
-from models import TRTModule, TRTProfilerV0
 
 os.environ['CUDA_MODULE_LOADING'] = 'LAZY'
 
