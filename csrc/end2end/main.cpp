@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 	}
 	else
 	{
-		for (auto& path : imagePathList)
+		for (auto path : imagePathList)
 		{
 			cv::Mat image = cv::imread(path);
 			yolov8->copy_from_Mat(image);
@@ -70,5 +70,6 @@ int main(int argc, char** argv)
 			cv::waitKey(0);
 		}
 	}
+	delete yolov8;
 	return 0;
 }
