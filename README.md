@@ -115,6 +115,8 @@ python build.py \
 
 # Infer images by the engine which you export or build
 
+## 1. Python infer
+
 You can infer images with the engine by [`infer.py`](infer.py) .
 
 Usage:
@@ -131,6 +133,35 @@ python3 infer.py --engine yolov8s_nms.engine --imgs data --show --out-dir output
 - `--out-dir` : Where to save detection results images. It will not work when use `--show` flag.
 - `--device` : The CUDA deivce you use.
 - `--profile` : Profile the TensorRT engine.
+
+## 2. C++ infer
+
+You can infer with c++ in [`csrc/end2end`](csrc/end2end) .
+
+Build:
+
+Please set you own librarys in [`CMakeLists.txt`](csrc/end2end/CMakeLists.txt) and modify you own config in [`yolov8.hpp`](csrc/end2end/yolov8.hpp) such as `classes names` and `colors` .
+
+``` shell
+export root=${PWD}
+cd src/end2end
+mkdir build
+cmake ..
+make
+mv yolov8 ${root}
+cd ${root}
+```
+
+Usage:
+
+``` shell
+# infer image
+./yolov8 yolov8s_nms.engine data/bus.jpg
+# infer images
+./yolov8 yolov8s_nms.engine data
+# infer video
+./yolov8 yolov8s_nms.engine data/test.mp4 # the video path
+```
 
 # Profile you engine
 
