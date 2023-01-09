@@ -182,8 +182,8 @@ YOLOv8::YOLOv8(const std::string& engine_file_path)
 
 YOLOv8::~YOLOv8()
 {
-	this->engine->destroy();
 	this->context->destroy();
+	this->engine->destroy();
 	this->runtime->destroy();
 	cudaStreamDestroy(this->stream);
 	for (auto& ptr : this->buffs)
@@ -193,7 +193,7 @@ YOLOv8::~YOLOv8()
 
 	for (auto& ptr : this->outputs)
 	{
-		CHECK(cudaFree(ptr));
+		CHECK(cudaFreeHost(ptr));
 	}
 
 }
@@ -353,13 +353,13 @@ void YOLOv8::postprocess(std::vector<Object>& objs)
 	}
 }
 
-static void draw_objects(const cv::Mat& image, const std::vector<Object>& objs)
+static void draw_objects(const cv::Mat& image, cv::Mat& res, const std::vector<Object>& objs)
 {
-	cv::Mat img = image.clone();
+	res = image.clone();
 	for (auto& obj : objs)
 	{
 		cv::Scalar color = cv::Scalar(COLORS[obj.label][0], COLORS[obj.label][1], COLORS[obj.label][2]);
-		cv::rectangle(img, obj.rect, color, 2);
+		cv::rectangle(res, obj.rect, color, 2);
 
 		char text[256];
 		sprintf(text, "%s %.1f%%", CLASS_NAMES[obj.label], obj.prob * 100);
@@ -370,14 +370,12 @@ static void draw_objects(const cv::Mat& image, const std::vector<Object>& objs)
 		int x = (int)obj.rect.x;
 		int y = (int)obj.rect.y + 1;
 
-		if (y > img.rows)
-			y = img.rows;
+		if (y > res.rows)
+			y = res.rows;
 
-		cv::rectangle(img, cv::Rect(x, y, label_size.width, label_size.height + baseLine), RECT_COLOR, -1);
+		cv::rectangle(res, cv::Rect(x, y, label_size.width, label_size.height + baseLine), RECT_COLOR, -1);
 
-		cv::putText(img, text, cv::Point(x, y + label_size.height),
+		cv::putText(res, text, cv::Point(x, y + label_size.height),
 			cv::FONT_HERSHEY_SIMPLEX, 0.4, TXT_COLOR, 1);
 	}
-
-	cv::imshow("results", img);
 }
