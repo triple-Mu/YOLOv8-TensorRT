@@ -12,21 +12,21 @@
    pip install -r requirement.txt
    ```
 
-   3. (optional) Install [`ultralytics`](https://github.com/ultralytics/ultralytics) package for TensorRT API building.
+3. (optional) Install [`ultralytics`](https://github.com/ultralytics/ultralytics) package for TensorRT API building.
 
-      ``` shell
-      pip install ultralytics
-      ```
+   ``` shell
+   pip install ultralytics
+   ```
 
-      You can download pretrained pytorch model by:
+   You can download pretrained pytorch model by:
 
-      ``` shell
-      wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8n.pt
-      wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8s.pt
-      wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8m.pt
-      wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8l.pt
-      wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8x.pt
-      ```
+   ``` shell
+   wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8n.pt
+   wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8s.pt
+   wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8m.pt
+   wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8l.pt
+   wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8x.pt
+   ```
 
 # Build TensorRT engine by ONNX
 
