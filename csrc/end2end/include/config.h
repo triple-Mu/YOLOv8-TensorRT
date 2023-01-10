@@ -9,12 +9,12 @@ namespace det
 {
 	const int DEVICE = 0;
 
-	static const int INPUT_W = 640;
-	static const int INPUT_H = 640;
-	static const int NUM_INPUT = 1;
-	static const int NUM_OUTPUT = 4;
+	const int INPUT_W = 640;
+	const int INPUT_H = 640;
+	const int NUM_INPUT = 1;
+	const int NUM_OUTPUT = 4;
 
-	static const int NUM_BINDINGS = NUM_INPUT + NUM_OUTPUT;
+	const int NUM_BINDINGS = NUM_INPUT + NUM_OUTPUT;
 	const cv::Scalar PAD_COLOR = { 114, 114, 114 };
 	const cv::Scalar RECT_COLOR = cv::Scalar(0, 0, 255);
 	const cv::Scalar TXT_COLOR = cv::Scalar(255, 255, 255);
