@@ -138,7 +138,7 @@ You can infer with c++ in [`csrc/end2end`](csrc/end2end) .
 
 Build:
 
-Please set you own librarys in [`CMakeLists.txt`](csrc/end2end/CMakeLists.txt) and modify you own config in [`config.h`](csrc/end2end/config.h) such as `CLASS_NAMES` and `COLORS`.
+Please set you own librarys in [`CMakeLists.txt`](csrc/end2end/CMakeLists.txt) and modify you own config in [`config.h`](csrc/end2end/include/config.h) such as `CLASS_NAMES` and `COLORS`.
 
 ``` shell
 export root=${PWD}
