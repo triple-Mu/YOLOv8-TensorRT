@@ -12,27 +12,27 @@
    pip install -r requirement.txt
    ```
 
-3. (optional) Install `ultralytics YOLOv8` package for TensorRT API building.
+   3. (optional) Install [`ultralytics`](https://github.com/ultralytics/ultralytics) package for TensorRT API building.
 
-   ``` shell
-   pip install -i https://test.pypi.org/simple/ ultralytics
-   ```
+      ``` shell
+      pip install ultralytics
+      ```
 
-   You can download pretrained pytorch model by:
+      You can download pretrained pytorch model by:
 
-   ``` shell
-   wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt
-   wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8s.pt
-   wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8m.pt
-   wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8l.pt
-   wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8x.pt
-   ```
+      ``` shell
+      wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8n.pt
+      wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8s.pt
+      wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8m.pt
+      wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8l.pt
+      wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8x.pt
+      ```
 
 # Build TensorRT engine by ONNX
 
 ## Preprocessed ONNX model
 
-You can dowload the onnx model which are exported by `YOLOv8` package and modified by me  .
+You can dowload the onnx model which are exported by `YOLOv8` package and modified by me.
 
 [**YOLOv8-n**](https://triplemu.oss-cn-beijing.aliyuncs.com/YOLOv8/ONNX/yolov8n_nms.onnx?OSSAccessKeyId=LTAI5tN1dgmZD4PF8AJUXp3J&Expires=1772936700&Signature=r6HgJTTcCSAxQxD9bKO9qBTtigQ%3D)
 
@@ -63,12 +63,10 @@ python build.py \
 #### Description of all arguments
 
 - `--weights` : The ONNX model you download.
-
 - `--iou-thres` : IOU threshold for NMS plugin.
 - `--conf-thres` : Confidence threshold for NMS plugin.
 - `--topk` : Max number of detection bboxes.
 - `--fp16` : Whether to export half-precision engine.
-
 - `--device` : The CUDA deivce you export engine .
 
 You can modify `iou-thres` `conf-thres` `topk` by yourself.
@@ -140,7 +138,7 @@ You can infer with c++ in [`csrc/end2end`](csrc/end2end) .
 
 Build:
 
-Please set you own librarys in [`CMakeLists.txt`](csrc/end2end/CMakeLists.txt) and modify you own config in [`yolov8.hpp`](csrc/end2end/yolov8.hpp) such as `classes names` and `colors` .
+Please set you own librarys in [`CMakeLists.txt`](csrc/end2end/CMakeLists.txt) and modify you own config in [`config.h`](csrc/end2end/config.h) such as `CLASS_NAMES` and `COLORS`.
 
 ``` shell
 export root=${PWD}
