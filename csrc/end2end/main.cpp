@@ -1,7 +1,7 @@
 //
 // Created by ubuntu on 1/8/23.
 //
-#include "yolov8.hpp"
+#include "include/yolov8.hpp"
 int main(int argc, char** argv)
 {
 	cudaSetDevice(DEVICE);

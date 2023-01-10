@@ -33,7 +33,7 @@ list(APPEND INCLUDE_DIRS
         ${CUDA_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
         ${TensorRT_INCLUDE_DIRS}
-        ../config
+        ./include
         )
 
 list(APPEND ALL_LIBS
@@ -46,6 +46,9 @@ include_directories(${INCLUDE_DIRS})
 
 add_executable(${PROJECT_NAME}
         main.cpp
+        include/yolov8.hpp
+        include/config.h
+        include/utils.h
         )
 
 target_link_directories(${PROJECT_NAME} PUBLIC ${ALL_LIBS})
