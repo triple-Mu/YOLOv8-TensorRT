@@ -84,12 +84,11 @@ class C2f(nn.Module):
         super().__init__()
 
     def forward(self, x):
-        y = list(self.cv1(x).split((self.c, self.c), 1))
         x = self.cv1(x)
-        y = [x, x[:, self.c:, ...]]
-        y.extend(m(y[-1]) for m in self.m)
-        y.pop(1)
-        return self.cv2(torch.cat(y, 1))
+        x = [x, x[:, self.c:, ...]]
+        x.extend(m(x[-1]) for m in self.m)
+        x.pop(1)
+        return self.cv2(torch.cat(x, 1))
 
 
 class PostDetect(nn.Module):
