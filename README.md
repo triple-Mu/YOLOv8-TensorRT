@@ -212,3 +212,7 @@ Usage:
 ``` shell
 python3 infer.py --engine yolov8s.engine --profile
 ```
+
+# DeepStream Deploy
+
+See more in [`README.md`](csrc/deepstream/README.md)
