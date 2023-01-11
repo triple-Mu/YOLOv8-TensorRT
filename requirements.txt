@@ -1,5 +1,7 @@
 numpy
+onnx
+onnxsim
 opencv-python
 torch
-# tensorrt
 # ultralytics -i https://test.pypi.org/simple
+# tensorrt

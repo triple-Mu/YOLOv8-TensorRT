@@ -12,7 +12,7 @@
    pip install -r requirement.txt
    ```
 
-3. (optional) Install [`ultralytics`](https://github.com/ultralytics/ultralytics) package for TensorRT API building.
+3. (optional) Install [`ultralytics`](https://github.com/ultralytics/ultralytics) package for ONNX export or TensorRT API building.
 
    ``` shell
    pip install ultralytics
