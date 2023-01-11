@@ -82,7 +82,7 @@ Usage:
 
 ``` shell
 python build.py \
---weights yolov8s_nms.onnx \
+--weights yolov8s.onnx \
 --iou-thres 0.65 \
 --conf-thres 0.25 \
 --topk 100 \
@@ -108,7 +108,7 @@ You can export TensorRT engine by [`trtexec`](https://github.com/NVIDIA/TensorRT
 Usage:
 
 ``` shell
-/usr/src/tensorrt/bin/trtexec --onnx=yolov8s_nms.onnx --saveEngine=yolov8s_nms.engine --fp16
+/usr/src/tensorrt/bin/trtexec --onnx=yolov8s.onnx --saveEngine=yolov8s.engine --fp16
 ```
 
 **If you installed TensorRT by a debian package, then the installation path of `trtexec`
@@ -150,7 +150,7 @@ You can infer images with the engine by [`infer.py`](infer.py) .
 Usage:
 
 ``` shell
-python3 infer.py --engine yolov8s_nms.engine --imgs data --show --out-dir outputs --device cuda:0
+python3 infer.py --engine yolov8s.engine --imgs data --show --out-dir outputs --device cuda:0
 ```
 
 #### Description of all arguments
@@ -184,11 +184,11 @@ Usage:
 
 ``` shell
 # infer image
-./yolov8 yolov8s_nms.engine data/bus.jpg
+./yolov8 yolov8s.engine data/bus.jpg
 # infer images
-./yolov8 yolov8s_nms.engine data
+./yolov8 yolov8s.engine data
 # infer video
-./yolov8 yolov8s_nms.engine data/test.mp4 # the video path
+./yolov8 yolov8s.engine data/test.mp4 # the video path
 ```
 
 # Profile you engine
@@ -198,5 +198,5 @@ If you want to profile the TensorRT engine:
 Usage:
 
 ``` shell
-python3 infer.py --engine yolov8s_nms.engine --profile
+python3 infer.py --engine yolov8s.engine --profile
 ```
