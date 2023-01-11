@@ -30,9 +30,39 @@
 
 # Build TensorRT engine by ONNX
 
+## Export ONNX by `ultralytics` API
+
+You can export your onnx model by `ultralytics` API
+and add postprocess into model at the same time.
+
+``` shell
+python export.py \
+--weights yolov8s.pt \
+--iou-thres 0.65 \
+--conf-thres 0.25 \
+--topk 100 \
+--opset 11 \
+--sim \
+--input-shape 1 3 640 640 \
+--device cuda:0
+```
+
+#### Description of all arguments
+
+- `--weights` : The PyTorch model you trained.
+- `--iou-thres` : IOU threshold for NMS plugin.
+- `--conf-thres` : Confidence threshold for NMS plugin.
+- `--topk` : Max number of detection bboxes.
+- `--opset` : ONNX opset version, default is 11.
+- `--sim` : Whether to simplify your onnx model.
+- `--input-shape` : Input shape for you model, should be 4 dimensions.
+- `--device` : The CUDA deivce you export engine .
+
+You will get an onnx model whose prefix is the same as input weights.
+
 ## Preprocessed ONNX model
 
-You can dowload the onnx model which are exported by `YOLOv8` package and modified by me.
+If you just want to taste first, you can dowload the onnx model which are exported by `YOLOv8` package and modified by me.
 
 [**YOLOv8-n**](https://triplemu.oss-cn-beijing.aliyuncs.com/YOLOv8/ONNX/yolov8n_nms.onnx?OSSAccessKeyId=LTAI5tN1dgmZD4PF8AJUXp3J&Expires=1772936700&Signature=r6HgJTTcCSAxQxD9bKO9qBTtigQ%3D)
 
