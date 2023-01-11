@@ -1,5 +1,4 @@
 import pickle
-import warnings
 from collections import defaultdict, namedtuple
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
@@ -7,8 +6,6 @@ from typing import List, Optional, Tuple, Union
 import onnx
 import tensorrt as trt
 import torch
-
-warnings.filterwarnings(action='ignore', category=DeprecationWarning)
 
 
 class EngineBuilder:
