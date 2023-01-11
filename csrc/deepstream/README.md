@@ -43,6 +43,14 @@ custom-lib-path=./build/libnvdsinfer_custom_bbox_yoloV8.so          # the deepst
 The deepstream config is [`deepstream_app_config.txt`](deepstream_app_config.txt).
 
 ```text
+****
+[source0]
+enable=1
+#Type - 1=CameraV4L2 2=URI 3=MultiURI
+type=3
+uri=file://./sample_1080p_h264.mp4                                  # the video path or stream you want to detect
+****
+****
 config-file=config_yoloV8.txt                                       # the net config path
 ```
 
