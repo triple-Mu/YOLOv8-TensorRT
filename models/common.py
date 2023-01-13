@@ -125,9 +125,50 @@ class PostDetect(nn.Module):
                              self.iou_thres, self.conf_thres, self.topk)
 
 
+class PostSeg(nn.Module):
+    export = True
+    shape = None
+    dynamic = False
+
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+
+    def forward(self, x):
+        p = self.proto(x[0])  # mask protos
+        bs = p.shape[0]  # batch size
+        mc = torch.cat(
+            [self.cv4[i](x[i]).view(bs, self.nm, -1) for i in range(self.nl)],
+            2)  # mask coefficients
+        box, score, cls = self.forward_det(x)
+        return box, score, cls, mc.transpose(1, 2), p.flatten(2)
+
+    def forward_det(self, x):
+        shape = x[0].shape
+        b, res = shape[0], []
+        for i in range(self.nl):
+            res.append(torch.cat((self.cv2[i](x[i]), self.cv3[i](x[i])), 1))
+        if self.dynamic or self.shape != shape:
+            self.anchors, self.strides = (x.transpose(
+                0, 1) for x in make_anchors(x, self.stride, 0.5))
+            self.shape = shape
+        x = [i.view(b, self.no, -1) for i in res]
+        y = torch.cat(x, 2)
+        box, cls = y[:, :self.reg_max * 4, ...], y[:, self.reg_max * 4:,
+                                                   ...].sigmoid()
+        box = box.view(b, 4, self.reg_max, -1).permute(0, 1, 3, 2).contiguous()
+        box = box.softmax(-1) @ torch.arange(self.reg_max).to(box)
+        box0, box1 = -box[:, :2, ...], box[:, 2:, ...]
+        box = self.anchors.repeat(b, 2, 1) + torch.cat([box0, box1], 1)
+        box = box * self.strides
+        score, cls = cls.transpose(1, 2).max(dim=-1)
+        return box.transpose(1, 2), score, cls
+
+
 def optim(module: nn.Module):
     s = str(type(module))[6:-2].split('.')[-1]
     if s == 'Detect':
         setattr(module, '__class__', PostDetect)
+    elif s == 'Segment':
+        setattr(module, '__class__', PostSeg)
     elif s == 'C2f':
         setattr(module, '__class__', C2f)

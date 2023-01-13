@@ -237,6 +237,7 @@ class TRTModule(torch.nn.Module):
         self.context = context
         self.input_names = names[:num_inputs]
         self.output_names = names[num_inputs:]
+        self.idx = list(range(self.num_outputs))
 
     def __init_bindings(self) -> None:
         dynamic = False
@@ -270,6 +271,11 @@ class TRTModule(torch.nn.Module):
         self.context.profiler = profiler \
             if profiler is not None else trt.Profiler()
 
+    def set_desired(self, desired: Optional[Union[List, Tuple]]):
+        if isinstance(desired,
+                      (list, tuple)) and len(desired) == self.num_outputs:
+            self.idx = [self.output_names.index(i) for i in desired]
+
     def forward(self, *inputs) -> Union[Tuple, torch.Tensor]:
 
         assert len(inputs) == self.num_inputs
@@ -300,7 +306,8 @@ class TRTModule(torch.nn.Module):
         self.context.execute_async_v2(self.bindings, self.stream.cuda_stream)
         self.stream.synchronize()
 
-        return tuple(outputs) if len(outputs) > 1 else outputs[0]
+        return tuple(outputs[i]
+                     for i in self.idx) if len(outputs) > 1 else outputs[0]
 
 
 class TRTProfilerV1(trt.IProfiler):
