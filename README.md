@@ -89,7 +89,8 @@ If you just want to taste first, you can download the onnx model which are expor
 
 [**YOLOv8-x**](https://triplemu.oss-cn-beijing.aliyuncs.com/YOLOv8/ONNX/yolov8x_nms.onnx?OSSAccessKeyId=LTAI5tN1dgmZD4PF8AJUXp3J&Expires=1673936778&Signature=3o%2F7QKhiZg1dW3I6sDrY4ug6MQU%3D)
 
-## Export Engine by TensorRT Python api
+## Export TensorRT Engine
+### 1. Export Engine by TensorRT Python api
 
 You can export TensorRT engine from ONNX by [`build.py` ](build.py).
 
@@ -116,7 +117,7 @@ python3 build.py \
 
 You can modify `iou-thres` `conf-thres` `topk` by yourself.
 
-## 2. Export Engine by Trtexec Tools
+### 2. Export Engine by Trtexec Tools
 
 You can export TensorRT engine by [`trtexec`](https://github.com/NVIDIA/TensorRT/tree/main/samples/trtexec) tools.
 
