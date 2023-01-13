@@ -134,7 +134,7 @@ def main(args):
         data = Engine(tensor)
 
         if args.seg:
-            seg_img = torch.asarray(seg_img[dh:H - dh, dw:W - dw, :],
+            seg_img = torch.asarray(seg_img[dh:H - dh, dw:W - dw, [2, 1, 0]],
                                     device=device)
             bboxes, scores, labels, masks = seg_postprocess(
                 data, bgr.shape[:2], args.conf_thres, args.iou_thres)
