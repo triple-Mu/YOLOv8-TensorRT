@@ -36,6 +36,9 @@ def parse_args():
                         type=str,
                         default='cuda:0',
                         help='TensorRT builder device')
+    parser.add_argument('--seg',
+                        action='store_true',
+                        help='Build seg model by onnx')
     args = parser.parse_args()
     assert len(args.input_shape) == 4
     return args
@@ -43,6 +46,7 @@ def parse_args():
 
 def main(args):
     builder = EngineBuilder(args.weights, args.device)
+    builder.seg = args.seg
     builder.build(fp16=args.fp16,
                   input_shape=args.input_shape,
                   iou_thres=args.iou_thres,

@@ -9,6 +9,7 @@ import torch
 
 
 class EngineBuilder:
+    seg = False
 
     def __init__(
             self,
@@ -77,9 +78,10 @@ class EngineBuilder:
                         topk: int = 100):
         parser = trt.OnnxParser(self.network, self.logger)
         onnx_model = onnx.load(str(self.checkpoint))
-        onnx_model.graph.node[-1].attribute[2].i = topk
-        onnx_model.graph.node[-1].attribute[3].f = conf_thres
-        onnx_model.graph.node[-1].attribute[4].f = iou_thres
+        if not self.seg:
+            onnx_model.graph.node[-1].attribute[2].i = topk
+            onnx_model.graph.node[-1].attribute[3].f = conf_thres
+            onnx_model.graph.node[-1].attribute[4].f = iou_thres
 
         if not parser.parse(onnx_model.SerializeToString()):
             raise RuntimeError(
@@ -110,6 +112,7 @@ class EngineBuilder:
         conf_thres: float = 0.25,
         topk: int = 100,
     ):
+        assert not self.seg
         from .api import SPPF, C2f, Conv, Detect, get_depth, get_width
 
         with open(self.checkpoint, 'rb') as f:

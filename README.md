@@ -40,15 +40,18 @@
    wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8x.pt
    ```
 
-# Build TensorRT engine by ONNX
+# Build TensorRT Engine by ONNX
+
 
 ## Export ONNX by `ultralytics` API
+
+### Export Your Own ONNX model
 
 You can export your onnx model by `ultralytics` API
 and add postprocess into model at the same time.
 
 ``` shell
-python export.py \
+python3 export.py \
 --weights yolov8s.pt \
 --iou-thres 0.65 \
 --conf-thres 0.25 \
@@ -72,9 +75,9 @@ python export.py \
 
 You will get an onnx model whose prefix is the same as input weights.
 
-## Preprocessed ONNX model
+###  Just Taste First
 
-If you just want to taste first, you can dowload the onnx model which are exported by `YOLOv8` package and modified by me.
+If you just want to taste first, you can download the onnx model which are exported by `YOLOv8` package and modified by me.
 
 [**YOLOv8-n**](https://triplemu.oss-cn-beijing.aliyuncs.com/YOLOv8/ONNX/yolov8n_nms.onnx?OSSAccessKeyId=LTAI5tN1dgmZD4PF8AJUXp3J&Expires=1772936700&Signature=r6HgJTTcCSAxQxD9bKO9qBTtigQ%3D)
 
@@ -86,14 +89,14 @@ If you just want to taste first, you can dowload the onnx model which are export
 
 [**YOLOv8-x**](https://triplemu.oss-cn-beijing.aliyuncs.com/YOLOv8/ONNX/yolov8x_nms.onnx?OSSAccessKeyId=LTAI5tN1dgmZD4PF8AJUXp3J&Expires=1673936778&Signature=3o%2F7QKhiZg1dW3I6sDrY4ug6MQU%3D)
 
-## 1. By TensorRT ONNX Python api
+## Export Engine by TensorRT Python api
 
 You can export TensorRT engine from ONNX by [`build.py` ](build.py).
 
 Usage:
 
 ``` shell
-python build.py \
+python3 build.py \
 --weights yolov8s.onnx \
 --iou-thres 0.65 \
 --conf-thres 0.25 \
@@ -113,14 +116,17 @@ python build.py \
 
 You can modify `iou-thres` `conf-thres` `topk` by yourself.
 
-## 2. By trtexec tools
+## 2. Export Engine by Trtexec Tools
 
 You can export TensorRT engine by [`trtexec`](https://github.com/NVIDIA/TensorRT/tree/main/samples/trtexec) tools.
 
 Usage:
 
 ``` shell
-/usr/src/tensorrt/bin/trtexec --onnx=yolov8s.onnx --saveEngine=yolov8s.engine --fp16
+/usr/src/tensorrt/bin/trtexec \
+--onnx=yolov8s.onnx \
+--saveEngine=yolov8s.engine \
+--fp16
 ```
 
 **If you installed TensorRT by a debian package, then the installation path of `trtexec`
@@ -128,41 +134,27 @@ is `/usr/src/tensorrt/bin/trtexec`**
 
 **If you installed TensorRT by a tar package, then the installation path of `trtexec` is under the `bin` folder in the path you decompressed**
 
+# Build TensorRT Engine by TensorRT API
 
+Please see more information in [`API-Build.md`](docs/API-Build.md)
 
-# Build TensorRT engine by API
+***Notice !!!*** We don't support YOLOv8-seg model now !!!
 
-When you want to build engine by api. You should generate the pickle weights parameters first.
+# Inference
 
-``` shell
-python gen_pkl.py -w yolov8s.pt -o yolov8s.pkl
-```
-
-You will get a `yolov8s.pkl` which contain the operators' parameters. And you can rebuild `yolov8s` model in TensorRT api.
-
-```
-python build.py \
---weights yolov8s.pkl \
---iou-thres 0.65 \
---conf-thres 0.25 \
---topk 100 \
---fp16  \
---input-shape 1 3 640 640 \
---device cuda:0
-```
-
-***Notice !!!***  Now we only support static input shape model build by TensorRT api. You'd best give the legal`input-shape`.
-
-# Infer images by the engine which you export or build
-
-## 1. Python infer
+## 1. Infer with python script
 
 You can infer images with the engine by [`infer.py`](infer.py) .
 
 Usage:
 
 ``` shell
-python3 infer.py --engine yolov8s.engine --imgs data --show --out-dir outputs --device cuda:0
+python3 infer.py \
+--engine yolov8s.engine \
+--imgs data \
+--show \
+--out-dir outputs \
+--device cuda:0
 ```
 
 #### Description of all arguments
@@ -174,13 +166,13 @@ python3 infer.py --engine yolov8s.engine --imgs data --show --out-dir outputs --
 - `--device` : The CUDA deivce you use.
 - `--profile` : Profile the TensorRT engine.
 
-## 2. C++ infer
+## 2. Infer with C++
 
-You can infer with c++ in [`csrc/end2end`](csrc/end2end) .
+You can infer with c++ in [`csrc/detect`](csrc/detect) .
 
-Build:
+### Build:
 
-Please set you own librarys in [`CMakeLists.txt`](csrc/end2end/CMakeLists.txt) and modify you own config in [`config.h`](csrc/end2end/include/config.h) such as `CLASS_NAMES` and `COLORS`.
+Please set you own librarys in [`CMakeLists.txt`](csrc/detect/CMakeLists.txt) and modify you own config in [`config.h`](csrc/detect/include/config.h) such as `CLASS_NAMES` and `COLORS`.
 
 ``` shell
 export root=${PWD}
@@ -203,6 +195,15 @@ Usage:
 ./yolov8 yolov8s.engine data/test.mp4 # the video path
 ```
 
+# TensorRT Segment Deploy
+
+Please see more information in [`Segment.md`](docs/Segment.md)
+
+# DeepStream Detection Deploy
+
+See more in [`README.md`](csrc/deepstream/README.md)
+
+
 # Profile you engine
 
 If you want to profile the TensorRT engine:
@@ -212,7 +213,3 @@ Usage:
 ``` shell
 python3 infer.py --engine yolov8s.engine --profile
 ```
-
-# DeepStream Deploy
-
-See more in [`README.md`](csrc/deepstream/README.md)
