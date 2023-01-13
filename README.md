@@ -9,7 +9,7 @@
 [![C++](https://img.shields.io/badge/CPP-11%2F14-yellow)](https://github.com/triple-Mu/YOLOv8-TensorRT)
 [![img](https://badgen.net/github/license/triple-Mu/YOLOv8-TensorRT)](https://github.com/triple-Mu/YOLOv8-TensorRT/blob/main/LICENSE)
 [![img](https://badgen.net/github/prs/triple-Mu/YOLOv8-TensorRT)](https://github.com/triple-Mu/YOLOv8-TensorRT/pulls)
-[![img](https://img.shields.io/github/stars/triple-Mu/YOLOv8-TensorRT?style=social&label=Star&maxAge=2592000)](https://github.com/triple-Mu/YOLOv8-TensorRT)
+[![img](https://img.shields.io/github/stars/triple-Mu/YOLOv8-TensorRT?color=ccf)](https://github.com/triple-Mu/YOLOv8-TensorRT)
 
 ---
 
