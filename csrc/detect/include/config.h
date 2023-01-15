@@ -2,8 +2,8 @@
 // Created by ubuntu on 1/10/23.
 //
 
-#ifndef YOLOV8_CSRC_END2END_INCLUDE_CONFIG_H
-#define YOLOV8_CSRC_END2END_INCLUDE_CONFIG_H
+#ifndef YOLOV8_CSRC_DETECT_INCLUDE_CONFIG_H
+#define YOLOV8_CSRC_DETECT_INCLUDE_CONFIG_H
 #include "opencv2/opencv.hpp"
 namespace det
 {
@@ -81,4 +81,4 @@ namespace det
 	};
 
 }
-#endif //YOLOV8_CSRC_END2END_INCLUDE_CONFIG_H
+#endif //YOLOV8_CSRC_DETECT_INCLUDE_CONFIG_H

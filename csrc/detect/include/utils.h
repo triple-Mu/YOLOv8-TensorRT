@@ -2,8 +2,8 @@
 // Created by ubuntu on 1/10/23.
 //
 
-#ifndef YOLOV8_CSRC_END2END_INCLUDE_UTILS_H
-#define YOLOV8_CSRC_END2END_INCLUDE_UTILS_H
+#ifndef YOLOV8_CSRC_DETECT_INCLUDE_UTILS_H
+#define YOLOV8_CSRC_DETECT_INCLUDE_UTILS_H
 #include <sys/stat.h>
 #include <iostream>
 #include <string>
@@ -130,4 +130,4 @@ inline bool IsFolder(const std::string& path)
 	return (stat(path.c_str(), &buffer) == 0 && S_ISDIR(buffer.st_mode));
 }
 
-#endif //YOLOV8_CSRC_END2END_INCLUDE_UTILS_H
+#endif //YOLOV8_CSRC_DETECT_INCLUDE_UTILS_H
