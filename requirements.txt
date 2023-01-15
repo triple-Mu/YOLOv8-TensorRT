@@ -3,5 +3,6 @@ onnx
 onnxsim
 opencv-python
 torch
+torchvision
 ultralytics
 # tensorrt
