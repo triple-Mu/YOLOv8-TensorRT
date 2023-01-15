@@ -3,5 +3,5 @@ onnx
 onnxsim
 opencv-python
 torch
-# ultralytics -i https://test.pypi.org/simple
+ultralytics
 # tensorrt
