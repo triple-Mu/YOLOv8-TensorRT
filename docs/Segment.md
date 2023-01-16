@@ -100,7 +100,7 @@ You can infer segment engine with c++ in [`csrc/segment`](../csrc/segment) .
 
 ### Build:
 
-Please set you own librarys in [`CMakeLists.txt`](../csrc/segment/CMakeLists.txt) and modify you own config in [`config.h`](csrc/detect/include/config.h) such as `CLASS_NAMES` and `COLORS`.
+Please set you own librarys in [`CMakeLists.txt`](../csrc/segment/CMakeLists.txt) and modify you own config in [`config.h`](../csrc/segment/include/config.h) such as `CLASS_NAMES`, `COLORS` and others .
 
 ``` shell
 export root=${PWD}
