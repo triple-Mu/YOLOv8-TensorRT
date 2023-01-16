@@ -96,4 +96,40 @@ python3 infer.py \
 
 ## Infer with C++
 
-***Notice !!!*** COMMING SOON !!!
+You can infer segment engine with c++ in [`csrc/segment`](../csrc/segment) .
+
+### Build:
+
+Please set you own librarys in [`CMakeLists.txt`](../csrc/segment/CMakeLists.txt) and modify you own config in [`config.h`](csrc/detect/include/config.h) such as `CLASS_NAMES` and `COLORS`.
+
+``` shell
+export root=${PWD}
+cd src/segment
+mkdir build
+cmake ..
+make
+mv yolov8-seg ${root}
+cd ${root}
+```
+
+If you have build OpenCV(>=4.7.0) by yourself, it provides a new api [`cv::dnn::NMSBoxesBatched`](https://docs.opencv.org/4.x/d6/d0f/group__dnn.html#ga977aae09fbf7c804e003cfea1d4e928c) .
+It is a gread api about efficient in-class nms .
+
+You can build by `-DBATCHED_NMS` and try to use it .
+``` shell
+....
+cmake .. -DBATCHED_NMS
+....
+```
+
+
+Usage:
+
+``` shell
+# infer image
+./yolov8-seg yolov8s-seg.engine data/bus.jpg
+# infer images
+./yolov8-seg yolov8s-seg.engine data
+# infer video
+./yolov8-seg yolov8s-seg.engine data/test.mp4 # the video path
+```
