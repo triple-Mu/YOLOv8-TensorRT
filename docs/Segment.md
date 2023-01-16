@@ -112,16 +112,12 @@ mv yolov8-seg ${root}
 cd ${root}
 ```
 
+***Notice !!!***
+
 If you have build OpenCV(>=4.7.0) by yourself, it provides a new api [`cv::dnn::NMSBoxesBatched`](https://docs.opencv.org/4.x/d6/d0f/group__dnn.html#ga977aae09fbf7c804e003cfea1d4e928c) .
-It is a gread api about efficient in-class nms .
+It is a gread api about efficient in-class nms . It will be used by default!
 
-You can build by `-DBATCHED_NMS` and try to use it .
-``` shell
-....
-cmake .. -DBATCHED_NMS
-....
-```
-
+***!!!***
 
 Usage:
 

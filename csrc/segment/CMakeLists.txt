@@ -53,3 +53,9 @@ add_executable(${PROJECT_NAME}
 
 target_link_directories(${PROJECT_NAME} PUBLIC ${ALL_LIBS})
 target_link_libraries(${PROJECT_NAME} PRIVATE nvinfer nvinfer_plugin cudart ${OpenCV_LIBS})
+
+
+if(${OpenCV_VERSION} VERSION_GREATER_EQUAL 4.7.0)
+    message(STATUS "Build with -DBATCHED_NMS")
+    add_definitions(-DBATCHED_NMS)
+endif()
