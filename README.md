@@ -16,7 +16,7 @@
 
 # Prepare the environment
 
-1. Install TensorRT follow [`TensorRT offical website`](https://developer.nvidia.com/nvidia-tensorrt-8x-download)
+1. Install TensorRT follow [`TensorRT official website`](https://developer.nvidia.com/nvidia-tensorrt-8x-download)
 
 2. Install python requirement.
 
