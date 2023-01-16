@@ -140,7 +140,8 @@ class PostSeg(nn.Module):
             [self.cv4[i](x[i]).view(bs, self.nm, -1) for i in range(self.nl)],
             2)  # mask coefficients
         box, score, cls = self.forward_det(x)
-        return box, score, cls, mc.transpose(1, 2), p.flatten(2)
+        out = torch.cat([box, score, cls, mc.transpose(1, 2)], 2)
+        return out, p.flatten(2)
 
     def forward_det(self, x):
         shape = x[0].shape
@@ -160,7 +161,7 @@ class PostSeg(nn.Module):
         box0, box1 = -box[:, :2, ...], box[:, 2:, ...]
         box = self.anchors.repeat(b, 2, 1) + torch.cat([box0, box1], 1)
         box = box * self.strides
-        score, cls = cls.transpose(1, 2).max(dim=-1)
+        score, cls = cls.transpose(1, 2).max(dim=-1, keepdim=True)
         return box.transpose(1, 2), score, cls
 
 

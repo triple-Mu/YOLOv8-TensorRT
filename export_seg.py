@@ -53,13 +53,12 @@ def main(args):
         model(fake_input)
     save_path = args.weights.replace('.pt', '.onnx')
     with BytesIO() as f:
-        torch.onnx.export(
-            model,
-            fake_input,
-            f,
-            opset_version=args.opset,
-            input_names=['images'],
-            output_names=['bboxes', 'scores', 'labels', 'maskconf', 'proto'])
+        torch.onnx.export(model,
+                          fake_input,
+                          f,
+                          opset_version=args.opset,
+                          input_names=['images'],
+                          output_names=['outputs', 'proto'])
         f.seek(0)
         onnx_model = onnx.load(f)
     onnx.checker.check_model(onnx_model)
