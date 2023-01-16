@@ -215,11 +215,12 @@ void YOLOv8::postprocess(std::vector<Object>& objs)
 	int* labels = static_cast<int*>(this->outputs[3]);
 	for (int i = 0; i < num_dets[0]; i++)
 	{
+		float* ptr = boxes + i * 4;
 		Object obj;
-		float x0 = (boxes[i * 4]) - this->dw;
-		float y0 = (boxes[i * 4 + 1]) - this->dh;
-		float x1 = (boxes[i * 4 + 2]) - this->dw;
-		float y1 = (boxes[i * 4 + 3]) - this->dh;
+		float x0 = *ptr++ - this->dw;
+		float y0 = *ptr++ - this->dh;
+		float x1 = *ptr++ - this->dw;
+		float y1 = *ptr++ - this->dh;
 
 		x0 = clamp(x0 * this->ratio, 0.f, this->w);
 		y0 = clamp(y0 * this->ratio, 0.f, this->h);
@@ -229,8 +230,8 @@ void YOLOv8::postprocess(std::vector<Object>& objs)
 		obj.rect.y = y0;
 		obj.rect.width = x1 - x0;
 		obj.rect.height = y1 - y0;
-		obj.prob = scores[i];
-		obj.label = labels[i];
+		obj.prob = *(scores + i);
+		obj.label = *(labels + i);
 
 		objs.push_back(obj);
 
