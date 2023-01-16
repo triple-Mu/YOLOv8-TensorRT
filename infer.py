@@ -102,7 +102,7 @@ def main(args):
 
     # set desired output names order
     if args.seg:
-        Engine.set_desired(['bboxes', 'scores', 'labels', 'maskconf', 'proto'])
+        Engine.set_desired(['outputs', 'proto'])
     else:
         Engine.set_desired(['num_dets', 'bboxes', 'scores', 'labels'])
 
@@ -180,19 +180,21 @@ def crop_mask(masks: Tensor, bboxes: Tensor) -> Tensor:
 
 
 def seg_postprocess(
-        data: Tuple[Tensor, Tensor, Tensor, Tensor, Tensor],
+        data: Tuple[Tensor],
         shape: Union[Tuple, List],
         conf_thres: float = 0.25,
         iou_thres: float = 0.65) -> Tuple[Tensor, Tensor, Tensor, List]:
-    assert len(data) == 5
+    assert len(data) == 2
     h, w = shape[0] // 4, shape[1] // 4  # 4x downsampling
-    bboxes, scores, labels, maskconf, proto = (i[0] for i in data)
+    outputs, proto = (i[0] for i in data)
+    bboxes, scores, labels, maskconf = outputs.split([4, 1, 1, 32], 1)
+    scores, labels = scores.squeeze(), labels.squeeze()
     select = scores > conf_thres
     bboxes, scores, labels, maskconf = bboxes[select], scores[select], labels[
         select], maskconf[select]
     idx = batched_nms(bboxes, scores, labels, iou_thres)
     bboxes, scores, labels, maskconf = bboxes[idx], scores[idx], labels[
-        idx], maskconf[idx]
+        idx].int(), maskconf[idx]
     masks = (maskconf @ proto).view(-1, h, w)
     masks = crop_mask(masks, bboxes / 4.)
     masks = F.interpolate(masks[None],
