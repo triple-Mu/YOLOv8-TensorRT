@@ -47,8 +47,7 @@ include_directories(${INCLUDE_DIRS})
 add_executable(${PROJECT_NAME}
         main.cpp
         include/yolov8-seg.hpp
-        include/config.h
-        include/utils.h
+        include/common.hpp
         )
 
 target_link_directories(${PROJECT_NAME} PUBLIC ${ALL_LIBS})
