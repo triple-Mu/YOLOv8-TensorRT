@@ -39,9 +39,12 @@
    wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8l.pt
    wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8x.pt
    ```
+# Normal Usage
+
+You can export ONNX or Engine using the origin [`ultralytics`](https://github.com/ultralytics/ultralytics) repo .
+Please see more information in [`Normal.md`](docs/Normal.md).
 
 # Build TensorRT Engine by ONNX
-
 
 ## Export ONNX by `ultralytics` API
 
@@ -169,15 +172,15 @@ python3 infer.py \
 
 ## 2. Infer with C++
 
-You can infer with c++ in [`csrc/detect`](csrc/detect) .
+You can infer with c++ in [`csrc/detect/end2end`](csrc/detect/end2end) .
 
 ### Build:
 
-Please set you own librarys in [`CMakeLists.txt`](csrc/detect/CMakeLists.txt) and modify you own config in [`config.h`](csrc/detect/include/config.h) such as `CLASS_NAMES` and `COLORS`.
+Please set you own librarys in [`CMakeLists.txt`](csrc/detect/end2end/CMakeLists.txt) and modify `CLASS_NAMES` and `COLORS` in [`main.cpp`](csrc/detect/end2end/main.cpp).
 
 ``` shell
 export root=${PWD}
-cd src/end2end
+cd src/detect/end2end
 mkdir build
 cmake ..
 make
