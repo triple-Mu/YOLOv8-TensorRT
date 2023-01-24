@@ -1,6 +1,8 @@
 //
 // Created by ubuntu on 1/20/23.
 //
+#ifndef DETECT_NORMAL_YOLOV8_HPP
+#define DETECT_NORMAL_YOLOV8_HPP
 #include "fstream"
 #include "common.hpp"
 #include "NvInferPlugin.h"
@@ -187,7 +189,11 @@ void YOLOv8::make_pipe(bool warmup)
 	}
 }
 
-void YOLOv8::letterbox(const cv::Mat& image, cv::Mat& out, cv::Size& size)
+void YOLOv8::letterbox(
+	const cv::Mat& image,
+	cv::Mat& out,
+	cv::Size& size
+)
 {
 	const float inp_h = size.height;
 	const float inp_w = size.width;
@@ -489,3 +495,4 @@ void YOLOv8::draw_objects(
 		);
 	}
 }
+#endif //DETECT_NORMAL_YOLOV8_HPP

@@ -2,8 +2,8 @@
 // Created by ubuntu on 1/24/23.
 //
 
-#ifndef DETECTION_END2END_COMMON_HPP
-#define DETECTION_END2END_COMMON_HPP
+#ifndef DETECT_END2END_COMMON_HPP
+#define DETECT_END2END_COMMON_HPP
 #include "opencv2/opencv.hpp"
 #include <sys/stat.h>
 #include <unistd.h>
@@ -153,4 +153,4 @@ namespace det
 		float width = 0;
 	};
 }
-#endif //DETECTION_END2END_COMMON_HPP
+#endif //DETECT_END2END_COMMON_HPP

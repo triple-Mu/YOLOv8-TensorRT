@@ -1,13 +1,11 @@
 //
-// Created by ubuntu on 1/10/23.
+// Created by ubuntu on 1/24/23.
 //
 
-#ifndef YOLOV8_CSRC_SEGMENT_INCLUDE_UTILS_H
-#define YOLOV8_CSRC_SEGMENT_INCLUDE_UTILS_H
+#ifndef SEGMENT_COMMON_HPP
+#define SEGMENT_COMMON_HPP
+#include "opencv2/opencv.hpp"
 #include <sys/stat.h>
-#include <iostream>
-#include <string>
-#include <assert.h>
 #include <unistd.h>
 #include "NvInfer.h"
 
@@ -75,29 +73,28 @@ inline int get_size_by_dims(const nvinfer1::Dims& dims)
 	return size;
 }
 
-inline int DataTypeToSize(const nvinfer1::DataType& dataType)
+inline int type_to_size(const nvinfer1::DataType& dataType)
 {
 	switch (dataType)
 	{
 	case nvinfer1::DataType::kFLOAT:
-		return sizeof(float);
+		return 4;
 	case nvinfer1::DataType::kHALF:
 		return 2;
-	case nvinfer1::DataType::kINT8:
-		return sizeof(int8_t);
 	case nvinfer1::DataType::kINT32:
-		return sizeof(int32_t);
+		return 4;
+	case nvinfer1::DataType::kINT8:
+		return 1;
 	case nvinfer1::DataType::kBOOL:
-		return sizeof(bool);
+		return 1;
 	default:
-		return sizeof(float);
+		return 4;
 	}
 }
 
-inline float clamp(const float val, const float minVal = 0.f, const float maxVal = 1280.f)
+inline static float clamp(float val, float min, float max)
 {
-	assert(minVal <= maxVal);
-	return std::min(maxVal, std::max(minVal, val));
+	return val > min ? (val < max ? val : max) : min;
 }
 
 inline bool IsPathExist(const std::string& path)
@@ -130,4 +127,31 @@ inline bool IsFolder(const std::string& path)
 	return (stat(path.c_str(), &buffer) == 0 && S_ISDIR(buffer.st_mode));
 }
 
-#endif //YOLOV8_CSRC_SEGMENT_INCLUDE_UTILS_H
+namespace seg
+{
+	struct Binding
+	{
+		size_t size = 1;
+		size_t dsize = 1;
+		nvinfer1::Dims dims;
+		std::string name;
+	};
+
+	struct Object
+	{
+		cv::Rect_<float> rect;
+		int label = 0;
+		float prob = 0.0;
+		cv::Mat boxMask;
+	};
+
+	struct PreParam
+	{
+		float ratio = 1.0f;
+		float dw = 0.0f;
+		float dh = 0.0f;
+		float height = 0;
+		float width = 0;
+	};
+}
+#endif //SEGMENT_COMMON_HPP

@@ -100,7 +100,16 @@ You can infer segment engine with c++ in [`csrc/segment`](../csrc/segment) .
 
 ### Build:
 
-Please set you own librarys in [`CMakeLists.txt`](../csrc/segment/CMakeLists.txt) and modify you own config in [`config.h`](../csrc/segment/include/config.h) such as `CLASS_NAMES`, `COLORS` and others .
+Please set you own librarys in [`CMakeLists.txt`](../csrc/segment/CMakeLists.txt) and modify you own config in [`main.cpp`](../csrc/segment/main.cpp) such as `CLASS_NAMES`, `COLORS`, `MASK_COLORS` and postprocess parameters .
+
+```c++
+int topk = 100;
+int seg_h = 160; // yolov8 model proto height
+int seg_w = 160; // yolov8 model proto width
+int seg_channels = 32; // yolov8 model proto channels
+float score_thres = 0.25f;
+float iou_thres = 0.65f;
+```
 
 ``` shell
 export root=${PWD}

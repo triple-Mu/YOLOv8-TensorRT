@@ -1,6 +1,8 @@
 //
 // Created by ubuntu on 1/20/23.
 //
+#ifndef DETECT_END2END_YOLOV8_HPP
+#define DETECT_END2END_YOLOV8_HPP
 #include "fstream"
 #include "common.hpp"
 #include "NvInferPlugin.h"
@@ -421,3 +423,4 @@ void YOLOv8::draw_objects(
 		);
 	}
 }
+#endif //DETECT_END2END_YOLOV8_HPP
