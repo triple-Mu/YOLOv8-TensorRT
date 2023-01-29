@@ -11,7 +11,6 @@ import torch
 import torch.nn.functional as F
 from numpy import ndarray
 from torch import Tensor
-from torchvision.ops import batched_nms
 
 os.environ['CUDA_MODULE_LOADING'] = 'LAZY'
 
@@ -53,9 +52,9 @@ ALPHA = 0.5
 
 
 def letterbox(
-        im: ndarray,
-        new_shape: Union[Tuple, List] = (640, 640),
-        color: Union[Tuple, List] = (114, 114, 114)
+    im: ndarray,
+    new_shape: Union[Tuple, List] = (640, 640),
+    color: Union[Tuple, List] = (114, 114, 114)
 ) -> Tuple[ndarray, float, Tuple[float, float]]:
     # Resize and pad image while meeting stride-multiple constraints
     shape = im.shape[:2]  # current shape [height, width]
@@ -102,7 +101,7 @@ def main(args):
 
     # set desired output names order
     if args.seg:
-        Engine.set_desired(['outputs', 'proto'])
+        Engine.set_desired(['indices', 'outputs', 'proto'])
     else:
         Engine.set_desired(['num_dets', 'bboxes', 'scores', 'labels'])
 
@@ -184,11 +183,13 @@ def seg_postprocess(
         shape: Union[Tuple, List]) -> Tuple[Tensor, Tensor, Tensor, List]:
     assert len(data) == 3
     h, w = shape[0] // 4, shape[1] // 4  # 4x downsampling
-    indices, outputs, proto = data[0][data[0][:, 0] == 0], data[1][0], data[2][0]
+    indices, outputs, proto = data[0][data[0][:,
+                                              0] == 0], data[1][0], data[2][0]
     num = indices[:, 2].unique().numel()
     labels, bbox_idx = indices[:num, 1], indices[:num, 2].long()
     bboxes, scores, maskconf = outputs.split([4, 1, 32], 1)
-    bboxes, scores, maskconf = bboxes[bbox_idx], scores[bbox_idx].squeeze(), maskconf[bbox_idx]
+    bboxes, scores, maskconf = bboxes[bbox_idx], scores[bbox_idx].squeeze(
+    ), maskconf[bbox_idx]
     masks = (maskconf @ proto).view(-1, h, w)
     masks = crop_mask(masks, bboxes / 4.)
     masks = F.interpolate(masks[None],
@@ -197,8 +198,8 @@ def seg_postprocess(
                           align_corners=False)[0]
     masks = masks.gt_(0.5)[..., None]
     cidx = (labels % len(MASK_COLORS)).cpu().numpy()
-    mask_color = torch.tensor(
-        MASK_COLORS[cidx].reshape(-1, 1, 1, 3)).to(bboxes) * ALPHA
+    mask_color = torch.tensor(MASK_COLORS[cidx].reshape(-1, 1, 1,
+                                                        3)).to(bboxes) * ALPHA
     out = [masks, masks @ mask_color]
     return bboxes, scores, labels, out
 
