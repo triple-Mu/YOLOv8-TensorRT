@@ -41,11 +41,11 @@ COLORS = {
 
 # the same as yolov8
 MASK_COLORS = np.array([(255, 56, 56), (255, 157, 151), (255, 112, 31),
-                        (255, 178, 29), (207, 210, 49), (72, 249, 10),
                         (146, 204, 23), (61, 219, 134), (26, 147, 52),
+                        (255, 178, 29), (207, 210, 49), (72, 249, 10),
+                        (132, 56, 255), (82, 0, 133), (203, 56, 255),
                         (0, 212, 187), (44, 153, 168), (0, 194, 255),
                         (52, 69, 147), (100, 115, 255), (0, 24, 236),
-                        (132, 56, 255), (82, 0, 133), (203, 56, 255),
                         (255, 149, 200), (255, 55, 199)],
                        dtype=np.float32) / 255.
 
@@ -53,9 +53,9 @@ ALPHA = 0.5
 
 
 def letterbox(
-    im: ndarray,
-    new_shape: Union[Tuple, List] = (640, 640),
-    color: Union[Tuple, List] = (114, 114, 114)
+        im: ndarray,
+        new_shape: Union[Tuple, List] = (640, 640),
+        color: Union[Tuple, List] = (114, 114, 114)
 ) -> Tuple[ndarray, float, Tuple[float, float]]:
     # Resize and pad image while meeting stride-multiple constraints
     shape = im.shape[:2]  # current shape [height, width]
@@ -137,7 +137,7 @@ def main(args):
             seg_img = torch.asarray(seg_img[dh:H - dh, dw:W - dw, [2, 1, 0]],
                                     device=device)
             bboxes, scores, labels, masks = seg_postprocess(
-                data, bgr.shape[:2], args.conf_thres, args.iou_thres)
+                data, bgr.shape[:2])
             mask, mask_color = [m[:, dh:H - dh, dw:W - dw, :] for m in masks]
             inv_alph_masks = (1 - mask * 0.5).cumprod(0)
             mcs = (mask_color * inv_alph_masks).sum(0) * 2
@@ -181,20 +181,14 @@ def crop_mask(masks: Tensor, bboxes: Tensor) -> Tensor:
 
 def seg_postprocess(
         data: Tuple[Tensor],
-        shape: Union[Tuple, List],
-        conf_thres: float = 0.25,
-        iou_thres: float = 0.65) -> Tuple[Tensor, Tensor, Tensor, List]:
-    assert len(data) == 2
+        shape: Union[Tuple, List]) -> Tuple[Tensor, Tensor, Tensor, List]:
+    assert len(data) == 3
     h, w = shape[0] // 4, shape[1] // 4  # 4x downsampling
-    outputs, proto = (i[0] for i in data)
-    bboxes, scores, labels, maskconf = outputs.split([4, 1, 1, 32], 1)
-    scores, labels = scores.squeeze(), labels.squeeze()
-    select = scores > conf_thres
-    bboxes, scores, labels, maskconf = bboxes[select], scores[select], labels[
-        select], maskconf[select]
-    idx = batched_nms(bboxes, scores, labels, iou_thres)
-    bboxes, scores, labels, maskconf = bboxes[idx], scores[idx], labels[
-        idx].int(), maskconf[idx]
+    indices, outputs, proto = data[0][data[0][:, 0] == 0], data[1][0], data[2][0]
+    num = indices[:, 2].unique().numel()
+    labels, bbox_idx = indices[:num, 1], indices[:num, 2].long()
+    bboxes, scores, maskconf = outputs.split([4, 1, 32], 1)
+    bboxes, scores, maskconf = bboxes[bbox_idx], scores[bbox_idx].squeeze(), maskconf[bbox_idx]
     masks = (maskconf @ proto).view(-1, h, w)
     masks = crop_mask(masks, bboxes / 4.)
     masks = F.interpolate(masks[None],
@@ -203,8 +197,8 @@ def seg_postprocess(
                           align_corners=False)[0]
     masks = masks.gt_(0.5)[..., None]
     cidx = (labels % len(MASK_COLORS)).cpu().numpy()
-    mask_color = torch.tensor(MASK_COLORS[cidx].reshape(-1, 1, 1,
-                                                        3)).to(bboxes) * ALPHA
+    mask_color = torch.tensor(
+        MASK_COLORS[cidx].reshape(-1, 1, 1, 3)).to(bboxes) * ALPHA
     out = [masks, masks @ mask_color]
     return bboxes, scores, labels, out
 

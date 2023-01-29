@@ -5,7 +5,7 @@ import onnx
 import torch
 from ultralytics import YOLO
 
-from models.common import optim
+from models.common import PostSegNMS, optim
 
 try:
     import onnxsim
@@ -20,6 +20,18 @@ def parse_args():
                         type=str,
                         required=True,
                         help='PyTorch yolov8 weights')
+    parser.add_argument('--iou-thres',
+                        type=float,
+                        default=0.65,
+                        help='IOU threshoud for NMS plugin')
+    parser.add_argument('--conf-thres',
+                        type=float,
+                        default=0.25,
+                        help='CONF threshoud for NMS plugin')
+    parser.add_argument('--topk',
+                        type=int,
+                        default=100,
+                        help='Max number of detection bboxes')
     parser.add_argument('--opset',
                         type=int,
                         default=11,
@@ -38,6 +50,9 @@ def parse_args():
                         help='Export ONNX device')
     args = parser.parse_args()
     assert len(args.input_shape) == 4
+    PostSegNMS.conf_thres = args.conf_thres
+    PostSegNMS.iou_thres = args.iou_thres
+    PostSegNMS.topk = args.topk
     return args
 
 
@@ -58,7 +73,7 @@ def main(args):
                           f,
                           opset_version=args.opset,
                           input_names=['images'],
-                          output_names=['outputs', 'proto'])
+                          output_names=['indices', 'outputs', 'proto'])
         f.seek(0)
         onnx_model = onnx.load(f)
     onnx.checker.check_model(onnx_model)

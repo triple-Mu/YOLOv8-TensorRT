@@ -78,6 +78,58 @@ class TRT_NMS(torch.autograd.Function):
         return nums_dets, boxes, scores, classes
 
 
+class TRT_NMS_IDX(torch.autograd.Function):
+    def forward(
+            ctx: Graph,
+            boxes: Tensor,
+            scores: Tensor,
+            iou_threshold: float = 0.65,
+            score_threshold: float = 0.25,
+            max_output_boxes: int = 100,
+            max_output_boxes_per_class: int = 100,
+            background_class: int = -1,
+            box_coding: int = 0,
+            center_point_box: int = 0,
+            plugin_version: str = '1',
+            score_activation: int = 0) -> Tensor:
+        batch_size = scores.shape[0]
+        indices = torch.randint(
+            0, max_output_boxes,
+            (batch_size * max_output_boxes, 3),
+            dtype=torch.int32)
+
+        return indices
+
+    @staticmethod
+    def symbolic(
+            g,
+            boxes: Value,
+            scores: Value,
+            iou_threshold: float = 0.45,
+            score_threshold: float = 0.25,
+            max_output_boxes: int = 100,
+            max_output_boxes_per_class: int = 100,
+            background_class: int = -1,
+            box_coding: int = 0,
+            center_point_box: int = 0,
+            score_activation: int = 0,
+            plugin_version: str = '1') -> Value:
+        indices = g.op('TRT::EfficientNMS_ONNX_TRT',
+                       boxes,
+                       scores,
+                       iou_threshold_f=iou_threshold,
+                       score_threshold_f=score_threshold,
+                       max_output_boxes_i=max_output_boxes,
+                       max_output_boxes_per_class_i=max_output_boxes,
+                       background_class_i=background_class,
+                       box_coding_i=box_coding,
+                       center_point_box_i=center_point_box,
+                       plugin_version_s=plugin_version,
+                       score_activation_i=score_activation,
+                       outputs=1)
+        return indices
+
+
 class C2f(nn.Module):
 
     def __init__(self, *args, **kwargs):
@@ -114,7 +166,7 @@ class PostDetect(nn.Module):
         x = [i.view(b, self.no, -1) for i in res]
         y = torch.cat(x, 2)
         box, cls = y[:, :self.reg_max * 4, ...], y[:, self.reg_max * 4:,
-                                                   ...].sigmoid()
+                                                 ...].sigmoid()
         box = box.view(b, 4, self.reg_max, -1).permute(0, 1, 3, 2).contiguous()
         box = box.softmax(-1) @ torch.arange(self.reg_max).to(box)
         box0, box1 = -box[:, :2, ...], box[:, 2:, ...]
@@ -155,7 +207,7 @@ class PostSeg(nn.Module):
         x = [i.view(b, self.no, -1) for i in res]
         y = torch.cat(x, 2)
         box, cls = y[:, :self.reg_max * 4, ...], y[:, self.reg_max * 4:,
-                                                   ...].sigmoid()
+                                                 ...].sigmoid()
         box = box.view(b, 4, self.reg_max, -1).permute(0, 1, 3, 2).contiguous()
         box = box.softmax(-1) @ torch.arange(self.reg_max).to(box)
         box0, box1 = -box[:, :2, ...], box[:, 2:, ...]
@@ -165,11 +217,54 @@ class PostSeg(nn.Module):
         return box.transpose(1, 2), score, cls
 
 
+class PostSegNMS(nn.Module):
+    export = True
+    shape = None
+    dynamic = False
+
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+
+    def forward(self, x):
+        p = self.proto(x[0])  # mask protos
+        bs = p.shape[0]  # batch size
+        mc = torch.cat(
+            [self.cv4[i](x[i]).view(bs, self.nm, -1) for i in range(self.nl)],
+            2)  # mask coefficients
+        box, cls, indices = self.forward_det(x)
+        out = torch.cat([box, cls, mc.transpose(1, 2)], 2)
+        return indices, out, p.flatten(2)
+
+    def forward_det(self, x):
+        shape = x[0].shape
+        b, res = shape[0], []
+        for i in range(self.nl):
+            res.append(torch.cat((self.cv2[i](x[i]), self.cv3[i](x[i])), 1))
+        if self.dynamic or self.shape != shape:
+            self.anchors, self.strides = (x.transpose(
+                0, 1) for x in make_anchors(x, self.stride, 0.5))
+            self.shape = shape
+        x = [i.view(b, self.no, -1) for i in res]
+        y = torch.cat(x, 2)
+        box, cls = y[:, :self.reg_max * 4, ...], y[:, self.reg_max * 4:,
+                                                 ...].sigmoid()
+        box = box.view(b, 4, self.reg_max, -1).permute(0, 1, 3, 2).contiguous()
+        box = box.softmax(-1) @ torch.arange(self.reg_max).to(box)
+        box0, box1 = -box[:, :2, ...], box[:, 2:, ...]
+        box = self.anchors.repeat(b, 2, 1) + torch.cat([box0, box1], 1)
+        box = box * self.strides
+        box, cls = box.transpose(1, 2), cls.transpose(1, 2)
+        indices = TRT_NMS_IDX.apply(box, cls, self.iou_thres, self.conf_thres, self.topk, self.topk)
+        cls = cls.max(dim=-1, keepdim=True).values
+        return box, cls, indices
+
+
 def optim(module: nn.Module):
     s = str(type(module))[6:-2].split('.')[-1]
     if s == 'Detect':
         setattr(module, '__class__', PostDetect)
     elif s == 'Segment':
-        setattr(module, '__class__', PostSeg)
+        # setattr(module, '__class__', PostSeg)
+        setattr(module, '__class__', PostSegNMS)
     elif s == 'C2f':
         setattr(module, '__class__', C2f)
