@@ -1,8 +1,7 @@
+from .engine import EngineBuilder, TRTModule, TRTProfilerV0, TRTProfilerV1  # isort:skip # noqa: E501
 import warnings
 
 import torch
-
-from .engine import EngineBuilder, TRTModule, TRTProfilerV0, TRTProfilerV1
 
 warnings.filterwarnings(action='ignore', category=torch.jit.TracerWarning)
 warnings.filterwarnings(action='ignore', category=torch.jit.ScriptWarning)
