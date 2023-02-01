@@ -33,11 +33,11 @@
    You can download pretrained pytorch model by:
 
    ``` shell
-   wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8n.pt
-   wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8s.pt
-   wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8m.pt
-   wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8l.pt
-   wget https://github.com/ultralytics/ultralytics/releases/download/v8.0.0/yolov8x.pt
+   wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt
+   wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8s.pt
+   wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8m.pt
+   wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8l.pt
+   wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8x.pt
    ```
 # Normal Usage
 
