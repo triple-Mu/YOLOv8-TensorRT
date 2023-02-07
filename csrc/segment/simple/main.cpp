@@ -3,7 +3,6 @@
 //
 #include "chrono"
 #include "yolov8-seg.hpp"
-#include "opencv2/opencv.hpp"
 
 const std::vector<std::string> CLASS_NAMES = {
 	"person", "bicycle", "car", "motorcycle", "airplane", "bus",
@@ -117,7 +116,6 @@ int main(int argc, char** argv)
 	int topk = 100;
 	int seg_h = 160;
 	int seg_w = 160;
-	int seg_channels = 32;
 	float score_thres = 0.25f;
 	float iou_thres = 0.65f;
 
@@ -141,7 +139,7 @@ int main(int argc, char** argv)
 			auto start = std::chrono::system_clock::now();
 			yolov8->infer();
 			auto end = std::chrono::system_clock::now();
-			yolov8->postprocess(objs, score_thres, iou_thres, topk, seg_channels, seg_h, seg_w);
+			yolov8->postprocess(objs, score_thres, iou_thres, topk, seg_h, seg_w);
 			yolov8->draw_objects(image, res, objs, CLASS_NAMES, COLORS, MASK_COLORS);
 			auto tc = (double)
 				std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.;
@@ -163,7 +161,7 @@ int main(int argc, char** argv)
 			auto start = std::chrono::system_clock::now();
 			yolov8->infer();
 			auto end = std::chrono::system_clock::now();
-			yolov8->postprocess(objs, score_thres, iou_thres, topk, seg_channels, seg_h, seg_w);
+			yolov8->postprocess(objs, score_thres, iou_thres, topk, seg_h, seg_w);
 			yolov8->draw_objects(image, res, objs, CLASS_NAMES, COLORS, MASK_COLORS);
 			auto tc = (double)
 				std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.;

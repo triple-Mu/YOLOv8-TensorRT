@@ -5,7 +5,7 @@ import onnx
 import torch
 from ultralytics import YOLO
 
-from models.common import optim
+from models.common import PostSeg, optim
 
 try:
     import onnxsim
@@ -20,6 +20,10 @@ def parse_args():
                         type=str,
                         required=True,
                         help='PyTorch yolov8 weights')
+    parser.add_argument('--topk',
+                        type=int,
+                        default=1000,
+                        help='Max number of proposal bboxes and masks')
     parser.add_argument('--opset',
                         type=int,
                         default=11,
@@ -38,6 +42,7 @@ def parse_args():
                         help='Export ONNX device')
     args = parser.parse_args()
     assert len(args.input_shape) == 4
+    PostSeg.topk = args.topk
     return args
 
 

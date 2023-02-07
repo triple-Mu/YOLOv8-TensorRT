@@ -187,15 +187,15 @@ def seg_postprocess(
     assert len(data) == 2
     h, w = shape[0] // 4, shape[1] // 4  # 4x downsampling
     outputs, proto = (i[0] for i in data)
-    bboxes, scores, labels, maskconf = outputs.split([4, 1, 1, 32], 1)
+    bboxes, scores, labels = outputs.split([4, 1, 1], 1)
     scores, labels = scores.squeeze(), labels.squeeze()
     select = scores > conf_thres
-    bboxes, scores, labels, maskconf = bboxes[select], scores[select], labels[
-        select], maskconf[select]
+    bboxes, scores, labels, proto = bboxes[select], scores[select], \
+        labels[select], proto[select]
     idx = batched_nms(bboxes, scores, labels, iou_thres)
-    bboxes, scores, labels, maskconf = bboxes[idx], scores[idx], labels[
-        idx].int(), maskconf[idx]
-    masks = (maskconf @ proto).view(-1, h, w)
+    bboxes, scores, labels, proto = bboxes[idx], scores[idx], \
+        labels[idx].int(), proto[idx]
+    masks = proto.view(-1, h, w)
     masks = crop_mask(masks, bboxes / 4.)
     masks = F.interpolate(masks[None],
                           shape,

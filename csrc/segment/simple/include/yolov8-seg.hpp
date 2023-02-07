@@ -29,7 +29,6 @@ public:
 		float score_thres = 0.25f,
 		float iou_thres = 0.65f,
 		int topk = 100,
-		int seg_channels = 32,
 		int seg_h = 160,
 		int seg_w = 160
 	);
@@ -337,11 +336,11 @@ void YOLOv8_seg::infer()
 
 }
 
-void YOLOv8_seg::postprocess(std::vector<Object>& objs,
+void YOLOv8_seg::postprocess(
+	std::vector<Object>& objs,
 	float score_thres,
 	float iou_thres,
 	int topk,
-	int seg_channels,
 	int seg_h,
 	int seg_w
 )
@@ -350,7 +349,6 @@ void YOLOv8_seg::postprocess(std::vector<Object>& objs,
 	auto input_h = this->input_bindings[0].dims.d[2];
 	auto input_w = this->input_bindings[0].dims.d[3];
 	auto num_anchors = this->output_bindings[0].dims.d[1];
-	auto num_channels = this->output_bindings[0].dims.d[2];
 
 	auto& dw = this->pparam.dw;
 	auto& dh = this->pparam.dh;
@@ -359,18 +357,17 @@ void YOLOv8_seg::postprocess(std::vector<Object>& objs,
 	auto& ratio = this->pparam.ratio;
 
 	auto* output = static_cast<float*>(this->host_ptrs[0]);
-	cv::Mat protos = cv::Mat(seg_channels, seg_h * seg_w, CV_32F,
-		static_cast<float*>(this->host_ptrs[1]));
+	auto* proto = static_cast<float*>(this->host_ptrs[1]);
 
 	std::vector<int> labels;
 	std::vector<float> scores;
 	std::vector<cv::Rect> bboxes;
-	std::vector<cv::Mat> mask_confs;
+	std::vector<cv::Mat> masks;
 	std::vector<int> indices;
 
 	for (int i = 0; i < num_anchors; i++)
 	{
-		float* ptr = output + i * num_channels;
+		float* ptr = output + i * 6;
 		float score = *(ptr + 4);
 		if (score > score_thres)
 		{
@@ -385,8 +382,8 @@ void YOLOv8_seg::postprocess(std::vector<Object>& objs,
 			y1 = clamp(y1 * ratio, 0.f, height);
 
 			int label = *(++ptr);
-			cv::Mat mask_conf = cv::Mat(1, seg_channels, CV_32F, ++ptr);
-			mask_confs.push_back(mask_conf);
+			cv::Mat mask = cv::Mat(1, seg_w * seg_h, CV_32F, proto + i * seg_h * seg_w);
+			masks.push_back(mask);
 			labels.push_back(label);
 			scores.push_back(score);
 			bboxes.push_back(cv::Rect_<float>(x0, y0, x1 - x0, y1 - y0));
@@ -413,7 +410,7 @@ void YOLOv8_seg::postprocess(std::vector<Object>& objs,
 	);
 #endif
 
-	cv::Mat masks;
+	cv::Mat masks_board;
 	int cnt = 0;
 	for (auto& i : indices)
 	{
@@ -426,13 +423,12 @@ void YOLOv8_seg::postprocess(std::vector<Object>& objs,
 		obj.label = labels[i];
 		obj.rect = tmp;
 		obj.prob = scores[i];
-		masks.push_back(mask_confs[i]);
+		masks_board.push_back(masks[i]);
 		objs.push_back(obj);
 		cnt += 1;
 	}
-
-	cv::Mat matmulRes = (masks * protos).t();
-	cv::Mat maskMat = matmulRes.reshape(indices.size(), { seg_w, seg_h });
+	masks_board = masks_board.t();
+	cv::Mat maskMat = masks_board.reshape(indices.size(), { seg_w, seg_h });
 
 	std::vector<cv::Mat> maskChannels;
 	cv::split(maskMat, maskChannels);

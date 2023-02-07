@@ -129,6 +129,7 @@ class PostSeg(nn.Module):
     export = True
     shape = None
     dynamic = False
+    topk = 1000
 
     def __init__(self, *args, **kwargs):
         super().__init__()
@@ -136,12 +137,20 @@ class PostSeg(nn.Module):
     def forward(self, x):
         p = self.proto(x[0])  # mask protos
         bs = p.shape[0]  # batch size
+        batch_inds = torch.arange(0, bs, dtype=torch.long,
+                                  device=p.device).view(-1, 1)
         mc = torch.cat(
             [self.cv4[i](x[i]).view(bs, self.nm, -1) for i in range(self.nl)],
             2)  # mask coefficients
-        box, score, cls = self.forward_det(x)
-        out = torch.cat([box, score, cls, mc.transpose(1, 2)], 2)
-        return out, p.flatten(2)
+        bboxes, scores, labels = self.forward_det(x)
+
+        values, topk_inds = scores.topk(self.topk, dim=1)
+        topk_inds = topk_inds.squeeze()
+        bboxes = bboxes[batch_inds, topk_inds, :]
+        labels = labels[batch_inds, topk_inds, :]
+        mc = mc.transpose(1, 2)[batch_inds, topk_inds, :]
+        out = torch.cat([bboxes, values, labels], -1)
+        return out, mc @ p.flatten(2)
 
     def forward_det(self, x):
         shape = x[0].shape
@@ -154,15 +163,17 @@ class PostSeg(nn.Module):
             self.shape = shape
         x = [i.view(b, self.no, -1) for i in res]
         y = torch.cat(x, 2)
-        box, cls = y[:, :self.reg_max * 4, ...], y[:, self.reg_max * 4:,
-                                                   ...].sigmoid()
-        box = box.view(b, 4, self.reg_max, -1).permute(0, 1, 3, 2).contiguous()
-        box = box.softmax(-1) @ torch.arange(self.reg_max).to(box)
-        box0, box1 = -box[:, :2, ...], box[:, 2:, ...]
-        box = self.anchors.repeat(b, 2, 1) + torch.cat([box0, box1], 1)
-        box = box * self.strides
-        score, cls = cls.transpose(1, 2).max(dim=-1, keepdim=True)
-        return box.transpose(1, 2), score, cls
+        bboxes, scores = y[:, :self.reg_max * 4, ...], y[:, self.reg_max * 4:,
+                                                         ...].sigmoid()
+        bboxes = bboxes.view(b, 4, self.reg_max, -1).permute(0, 1, 3,
+                                                             2).contiguous()
+        bboxes = bboxes.softmax(-1) @ torch.arange(self.reg_max).to(bboxes)
+        bboxes0, bboxes1 = -bboxes[:, :2, ...], bboxes[:, 2:, ...]
+        bboxes = self.anchors.repeat(b, 2, 1) + torch.cat([bboxes0, bboxes1],
+                                                          1)
+        bboxes = bboxes * self.strides
+        scores, labels = scores.transpose(1, 2).max(dim=-1, keepdim=True)
+        return bboxes.transpose(1, 2), scores, labels
 
 
 def optim(module: nn.Module):
