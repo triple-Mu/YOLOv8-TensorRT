@@ -228,7 +228,7 @@ You can use `cuda-python` or `pycuda` for inference.
 Please install by such command:
 
 ```shell
-pip install cuda-python3
+pip install cuda-python
 # or
 pip install pycuda
 ```
