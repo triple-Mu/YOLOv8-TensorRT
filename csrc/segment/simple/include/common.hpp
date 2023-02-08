@@ -1,9 +1,9 @@
 //
-// Created by ubuntu on 1/24/23.
+// Created by ubuntu on 2/9/23.
 //
 
-#ifndef SEGMENT_COMMON_HPP
-#define SEGMENT_COMMON_HPP
+#ifndef SEGMENT_SIMPLE_COMMON_HPP
+#define SEGMENT_SIMPLE_COMMON_HPP
 #include "opencv2/opencv.hpp"
 #include <sys/stat.h>
 #include <unistd.h>
@@ -154,4 +154,4 @@ namespace seg
 		float width = 0;
 	};
 }
-#endif //SEGMENT_COMMON_HPP
+#endif //SEGMENT_SIMPLE_COMMON_HPP

@@ -1,18 +1,19 @@
 //
-// Created by ubuntu on 1/20/23.
+// Created by ubuntu on 2/8/23.
 //
-#ifndef DETECT_NORMAL_YOLOV8_HPP
-#define DETECT_NORMAL_YOLOV8_HPP
-#include "fstream"
+#ifndef SEGMENT_NORMAL_YOLOV8_SEG_HPP
+#define SEGMENT_NORMAL_YOLOV8_SEG_HPP
+#include <fstream>
 #include "common.hpp"
 #include "NvInferPlugin.h"
-using namespace det;
 
-class YOLOv8
+using namespace seg;
+
+class YOLOv8_seg
 {
 public:
-	explicit YOLOv8(const std::string& engine_file_path);
-	~YOLOv8();
+	explicit YOLOv8_seg(const std::string& engine_file_path);
+	~YOLOv8_seg();
 
 	void make_pipe(bool warmup = true);
 	void copy_from_Mat(const cv::Mat& image);
@@ -28,14 +29,17 @@ public:
 		float score_thres = 0.25f,
 		float iou_thres = 0.65f,
 		int topk = 100,
-		int num_labels = 80
+		int seg_channels = 32,
+		int seg_h = 160,
+		int seg_w = 160
 	);
 	static void draw_objects(
 		const cv::Mat& image,
 		cv::Mat& res,
 		const std::vector<Object>& objs,
 		const std::vector<std::string>& CLASS_NAMES,
-		const std::vector<std::vector<unsigned int>>& COLORS
+		const std::vector<std::vector<unsigned int>>& COLORS,
+		const std::vector<std::vector<unsigned int>>& MASK_COLORS
 	);
 	int num_bindings;
 	int num_inputs = 0;
@@ -55,7 +59,7 @@ private:
 
 };
 
-YOLOv8::YOLOv8(const std::string& engine_file_path)
+YOLOv8_seg::YOLOv8_seg(const std::string& engine_file_path)
 {
 	std::ifstream file(engine_file_path, std::ios::binary);
 	assert(file.good());
@@ -115,7 +119,7 @@ YOLOv8::YOLOv8(const std::string& engine_file_path)
 
 }
 
-YOLOv8::~YOLOv8()
+YOLOv8_seg::~YOLOv8_seg()
 {
 	this->context->destroy();
 	this->engine->destroy();
@@ -130,9 +134,9 @@ YOLOv8::~YOLOv8()
 	{
 		CHECK(cudaFreeHost(ptr));
 	}
-
 }
-void YOLOv8::make_pipe(bool warmup)
+
+void YOLOv8_seg::make_pipe(bool warmup)
 {
 
 	for (auto& bindings : this->input_bindings)
@@ -189,7 +193,7 @@ void YOLOv8::make_pipe(bool warmup)
 	}
 }
 
-void YOLOv8::letterbox(
+void YOLOv8_seg::letterbox(
 	const cv::Mat& image,
 	cv::Mat& out,
 	cv::Size& size
@@ -255,7 +259,7 @@ void YOLOv8::letterbox(
 	this->pparam.width = width;;
 }
 
-void YOLOv8::copy_from_Mat(const cv::Mat& image)
+void YOLOv8_seg::copy_from_Mat(const cv::Mat& image)
 {
 	cv::Mat nchw;
 	auto& in_binding = this->input_bindings[0];
@@ -286,7 +290,7 @@ void YOLOv8::copy_from_Mat(const cv::Mat& image)
 	);
 }
 
-void YOLOv8::copy_from_Mat(const cv::Mat& image, cv::Size& size)
+void YOLOv8_seg::copy_from_Mat(const cv::Mat& image, cv::Size& size)
 {
 	cv::Mat nchw;
 	this->letterbox(
@@ -310,7 +314,7 @@ void YOLOv8::copy_from_Mat(const cv::Mat& image, cv::Size& size)
 	);
 }
 
-void YOLOv8::infer()
+void YOLOv8_seg::infer()
 {
 
 	this->context->enqueueV2(
@@ -333,17 +337,35 @@ void YOLOv8::infer()
 
 }
 
-void YOLOv8::postprocess(
-	std::vector<Object>& objs,
+void YOLOv8_seg::postprocess(std::vector<Object>& objs,
 	float score_thres,
 	float iou_thres,
 	int topk,
-	int num_labels
+	int seg_channels,
+	int seg_h,
+	int seg_w
 )
 {
 	objs.clear();
-	auto num_channels = this->output_bindings[0].dims.d[1];
-	auto num_anchors = this->output_bindings[0].dims.d[2];
+	auto input_h = this->input_bindings[0].dims.d[2];
+	auto input_w = this->input_bindings[0].dims.d[3];
+	int num_channels, num_anchors, num_classes;
+	bool flag = false;
+	int bid;
+	int bcnt = -1;
+	for (auto& o : this->output_bindings)
+	{
+		bcnt += 1;
+		if (o.dims.nbDims == 3)
+		{
+			num_channels = o.dims.d[1];
+			num_anchors = o.dims.d[2];
+			flag = true;
+			bid = bcnt;
+		}
+	}
+	assert(flag);
+	num_classes = num_channels - seg_channels - 4;
 
 	auto& dw = this->pparam.dw;
 	auto& dh = this->pparam.dh;
@@ -351,24 +373,26 @@ void YOLOv8::postprocess(
 	auto& height = this->pparam.height;
 	auto& ratio = this->pparam.ratio;
 
-	std::vector<cv::Rect> bboxes;
-	std::vector<float> scores;
+	cv::Mat output = cv::Mat(num_channels, num_anchors, CV_32F,
+		static_cast<float*>(this->host_ptrs[bid]));
+	output = output.t();
+
+	cv::Mat protos = cv::Mat(seg_channels, seg_h * seg_w, CV_32F,
+		static_cast<float*>(this->host_ptrs[1 - bid]));
+
 	std::vector<int> labels;
+	std::vector<float> scores;
+	std::vector<cv::Rect> bboxes;
+	std::vector<cv::Mat> mask_confs;
 	std::vector<int> indices;
 
-	cv::Mat output = cv::Mat(
-		num_channels,
-		num_anchors,
-		CV_32F,
-		static_cast<float*>(this->host_ptrs[0])
-	);
-	output = output.t();
 	for (int i = 0; i < num_anchors; i++)
 	{
 		auto row_ptr = output.row(i).ptr<float>();
 		auto bboxes_ptr = row_ptr;
 		auto scores_ptr = row_ptr + 4;
-		auto max_s_ptr = std::max_element(scores_ptr, scores_ptr + num_labels);
+		auto mask_confs_ptr = row_ptr + 4 + num_classes;
+		auto max_s_ptr = std::max_element(scores_ptr, scores_ptr + num_classes);
 		float score = *max_s_ptr;
 		if (score > score_thres)
 		{
@@ -389,13 +413,16 @@ void YOLOv8::postprocess(
 			bbox.width = x1 - x0;
 			bbox.height = y1 - y0;
 
+			cv::Mat mask_conf = cv::Mat(1, seg_channels, CV_32F, mask_confs_ptr);
+
 			bboxes.push_back(bbox);
 			labels.push_back(label);
 			scores.push_back(score);
+			mask_confs.push_back(mask_conf);
 		}
 	}
 
-#ifdef BATCHED_NMS
+#if defined(BATCHED_NMS)
 	cv::dnn::NMSBoxesBatched(
 		bboxes,
 		scores,
@@ -404,7 +431,7 @@ void YOLOv8::postprocess(
 		iou_thres,
 		indices
 	);
-#elif
+#else
 	cv::dnn::NMSBoxes(
 		bboxes,
 		scores,
@@ -414,6 +441,7 @@ void YOLOv8::postprocess(
 	);
 #endif
 
+	cv::Mat masks;
 	int cnt = 0;
 	for (auto& i : indices)
 	{
@@ -421,30 +449,69 @@ void YOLOv8::postprocess(
 		{
 			break;
 		}
+		cv::Rect tmp = bboxes[i];
 		Object obj;
-		obj.rect = bboxes[i];
-		obj.prob = scores[i];
 		obj.label = labels[i];
+		obj.rect = tmp;
+		obj.prob = scores[i];
+		masks.push_back(mask_confs[i]);
 		objs.push_back(obj);
 		cnt += 1;
 	}
+
+	cv::Mat matmulRes = (masks * protos).t();
+	cv::Mat maskMat = matmulRes.reshape(indices.size(), { seg_w, seg_h });
+
+	std::vector<cv::Mat> maskChannels;
+	cv::split(maskMat, maskChannels);
+	int scale_dw = dw / input_w * seg_w;
+	int scale_dh = dh / input_h * seg_h;
+
+	cv::Rect roi(
+		scale_dw,
+		scale_dh,
+		seg_w - 2 * scale_dw,
+		seg_h - 2 * scale_dh);
+
+	for (int i = 0; i < indices.size(); i++)
+	{
+		cv::Mat dest, mask;
+		cv::exp(-maskChannels[i], dest);
+		dest = 1.0 / (1.0 + dest);
+		dest = dest(roi);
+		cv::resize(
+			dest,
+			mask,
+			cv::Size((int)width, (int)height),
+			cv::INTER_LINEAR
+		);
+		objs[i].boxMask = mask(objs[i].rect) > 0.5f;
+	}
+
 }
 
-void YOLOv8::draw_objects(
-	const cv::Mat& image,
+void YOLOv8_seg::draw_objects(const cv::Mat& image,
 	cv::Mat& res,
 	const std::vector<Object>& objs,
 	const std::vector<std::string>& CLASS_NAMES,
-	const std::vector<std::vector<unsigned int>>& COLORS
+	const std::vector<std::vector<unsigned int>>& COLORS,
+	const std::vector<std::vector<unsigned int>>& MASK_COLORS
 )
 {
 	res = image.clone();
+	cv::Mat mask = image.clone();
 	for (auto& obj : objs)
 	{
+		int idx = obj.label;
 		cv::Scalar color = cv::Scalar(
-			COLORS[obj.label][0],
-			COLORS[obj.label][1],
-			COLORS[obj.label][2]
+			COLORS[idx][0],
+			COLORS[idx][1],
+			COLORS[idx][2]
+		);
+		cv::Scalar mask_color = cv::Scalar(
+			MASK_COLORS[idx % 20][0],
+			MASK_COLORS[idx % 20][1],
+			MASK_COLORS[idx % 20][2]
 		);
 		cv::rectangle(
 			res,
@@ -457,9 +524,10 @@ void YOLOv8::draw_objects(
 		sprintf(
 			text,
 			"%s %.1f%%",
-			CLASS_NAMES[obj.label].c_str(),
+			CLASS_NAMES[idx].c_str(),
 			obj.prob * 100
 		);
+		mask(obj.rect).setTo(mask_color, obj.boxMask);
 
 		int baseLine = 0;
 		cv::Size label_size = cv::getTextSize(
@@ -493,5 +561,13 @@ void YOLOv8::draw_objects(
 			1
 		);
 	}
+	cv::addWeighted(
+		res,
+		0.5,
+		mask,
+		0.8,
+		1,
+		res
+	);
 }
-#endif //DETECT_NORMAL_YOLOV8_HPP
+#endif //SEGMENT_NORMAL_YOLOV8_SEG_HPP

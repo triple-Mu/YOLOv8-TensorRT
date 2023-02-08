@@ -1,4 +1,3 @@
-from models import TRTModule, TRTProfilerV0  # isort:skip
 import argparse
 import os
 import random
@@ -7,11 +6,7 @@ from typing import List, Tuple, Union
 
 import cv2
 import numpy as np
-import torch
-import torch.nn.functional as F
 from numpy import ndarray
-from torch import Tensor
-from torchvision.ops import batched_nms
 
 os.environ['CUDA_MODULE_LOADING'] = 'LAZY'
 
@@ -96,15 +91,15 @@ def blob(im: ndarray) -> Tuple[ndarray, ndarray]:
 
 
 def main(args):
-    device = torch.device(args.device)
-    Engine = TRTModule(args.engine, device)
-    H, W = Engine.inp_info[0].shape[-2:]
-
-    # set desired output names order
-    if args.seg:
-        Engine.set_desired(['outputs', 'proto'])
+    if args.method == 'cudart':
+        from models.cudart_api import TRTEngine
+    elif args.method == 'pycuda':
+        from models.pycuda_api import TRTEngine
     else:
-        Engine.set_desired(['num_dets', 'bboxes', 'scores', 'labels'])
+        raise NotImplementedError
+
+    Engine = TRTEngine(args.engine)
+    H, W = Engine.inp_info[0].shape[-2:]
 
     images_path = Path(args.imgs)
     assert images_path.exists()
@@ -129,21 +124,19 @@ def main(args):
         dw, dh = int(dwdh[0]), int(dwdh[1])
         rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
         tensor, seg_img = blob(rgb)
-        dwdh = torch.asarray(dwdh * 2, dtype=torch.float32, device=device)
-        tensor = torch.asarray(tensor, device=device)
+        dwdh = np.array(dwdh * 2, dtype=np.float32)
+        tensor = np.ascontiguousarray(tensor)
         data = Engine(tensor)
 
         if args.seg:
-            seg_img = torch.asarray(seg_img[dh:H - dh, dw:W - dw, [2, 1, 0]],
-                                    device=device)
+            seg_img = seg_img[dh:H - dh, dw:W - dw, [2, 1, 0]]
             bboxes, scores, labels, masks = seg_postprocess(
                 data, bgr.shape[:2], args.conf_thres, args.iou_thres)
             mask, mask_color = [m[:, dh:H - dh, dw:W - dw, :] for m in masks]
             inv_alph_masks = (1 - mask * 0.5).cumprod(0)
             mcs = (mask_color * inv_alph_masks).sum(0) * 2
             seg_img = (seg_img * inv_alph_masks[-1] + mcs) * 255
-            draw = cv2.resize(seg_img.cpu().numpy().astype(np.uint8),
-                              draw.shape[:2][::-1])
+            draw = cv2.resize(seg_img.astype(np.uint8), draw.shape[:2][::-1])
         else:
             bboxes, scores, labels = det_postprocess(data)
 
@@ -151,7 +144,7 @@ def main(args):
         bboxes /= ratio
 
         for (bbox, score, label) in zip(bboxes, scores, labels):
-            bbox = bbox.round().int().tolist()
+            bbox = bbox.round().astype(np.int32).tolist()
             cls_id = int(label)
             cls = CLASSES[cls_id]
             color = COLORS[cls]
@@ -168,48 +161,54 @@ def main(args):
             cv2.imwrite(str(save_image), draw)
 
 
-def crop_mask(masks: Tensor, bboxes: Tensor) -> Tensor:
+def crop_mask(masks: ndarray, bboxes: ndarray) -> ndarray:
     n, h, w = masks.shape
-    x1, y1, x2, y2 = torch.chunk(bboxes[:, :, None], 4, 1)  # x1 shape(1,1,n)
-    r = torch.arange(w, device=masks.device,
-                     dtype=x1.dtype)[None, None, :]  # rows shape(1,w,1)
-    c = torch.arange(h, device=masks.device,
-                     dtype=x1.dtype)[None, :, None]  # cols shape(h,1,1)
+    x1, y1, x2, y2 = np.split(bboxes[:, :, None], [1, 2, 3],
+                              1)  # x1 shape(1,1,n)
+    r = np.arange(w, dtype=x1.dtype)[None, None, :]  # rows shape(1,w,1)
+    c = np.arange(h, dtype=x1.dtype)[None, :, None]  # cols shape(h,1,1)
 
     return masks * ((r >= x1) * (r < x2) * (c >= y1) * (c < y2))
 
 
 def seg_postprocess(
-        data: Tuple[Tensor],
+        data: Tuple[ndarray],
         shape: Union[Tuple, List],
         conf_thres: float = 0.25,
-        iou_thres: float = 0.65) -> Tuple[Tensor, Tensor, Tensor, List]:
+        iou_thres: float = 0.65) -> Tuple[ndarray, ndarray, ndarray, List]:
     assert len(data) == 2
     h, w = shape[0] // 4, shape[1] // 4  # 4x downsampling
     outputs, proto = (i[0] for i in data)
-    bboxes, scores, labels, maskconf = outputs.split([4, 1, 1, 32], 1)
+    bboxes, scores, labels, maskconf = np.split(outputs, [4, 5, 6], 1)
     scores, labels = scores.squeeze(), labels.squeeze()
     select = scores > conf_thres
     bboxes, scores, labels, maskconf = bboxes[select], scores[select], labels[
         select], maskconf[select]
-    idx = batched_nms(bboxes, scores, labels, iou_thres)
+    cvbboxes = np.concatenate([bboxes[:, :2], bboxes[:, 2:] - bboxes[:, :2]],
+                              1)
+    labels = labels.astype(np.int32)
+    v0, v1 = map(int, (cv2.__version__).split('.')[:2])
+    assert v0 == 4, 'OpenCV version is wrong'
+    if v1 > 6:
+        idx = cv2.dnn.NMSBoxesBatched(cvbboxes, scores, labels, conf_thres,
+                                      iou_thres)
+    else:
+        idx = cv2.dnn.NMSBoxes(cvbboxes, scores, conf_thres, iou_thres)
     bboxes, scores, labels, maskconf = bboxes[idx], scores[idx], labels[
-        idx].int(), maskconf[idx]
-    masks = (maskconf @ proto).view(-1, h, w)
+        idx], maskconf[idx]
+    masks = (maskconf @ proto).reshape(-1, h, w)
     masks = crop_mask(masks, bboxes / 4.)
-    masks = F.interpolate(masks[None],
-                          shape,
-                          mode='bilinear',
-                          align_corners=False)[0]
-    masks = masks.gt_(0.5)[..., None]
-    cidx = (labels % len(MASK_COLORS)).cpu().numpy()
-    mask_color = torch.tensor(MASK_COLORS[cidx].reshape(-1, 1, 1,
-                                                        3)).to(bboxes) * ALPHA
+    masks = cv2.resize(masks.transpose([1, 2, 0]),
+                       shape,
+                       interpolation=cv2.INTER_LINEAR).transpose(2, 0, 1)
+    masks = np.ascontiguousarray((masks > 0.5)[..., None])
+    cidx = labels % len(MASK_COLORS)
+    mask_color = MASK_COLORS[cidx].reshape(-1, 1, 1, 3) * ALPHA
     out = [masks, masks @ mask_color]
     return bboxes, scores, labels, out
 
 
-def det_postprocess(data: Tuple[Tensor, Tensor, Tensor, Tensor]):
+def det_postprocess(data: Tuple[ndarray, ndarray, ndarray]):
     assert len(data) == 4
     num_dets, bboxes, scores, labels = (i[0] for i in data)
     nums = num_dets.item()
@@ -239,10 +238,10 @@ def parse_args():
                         type=float,
                         default=0.65,
                         help='Confidence threshold')
-    parser.add_argument('--device',
+    parser.add_argument('--method',
                         type=str,
-                        default='cuda:0',
-                        help='TensorRT infer device')
+                        default='cudart',
+                        help='CUDART pipeline')
     parser.add_argument('--profile',
                         action='store_true',
                         help='Profile TensorRT engine')
@@ -250,18 +249,6 @@ def parse_args():
     return args
 
 
-def profile(args):
-    device = torch.device(args.device)
-    Engine = TRTModule(args.engine, device)
-    profiler = TRTProfilerV0()
-    Engine.set_profiler(profiler)
-    random_input = torch.randn(Engine.inp_info[0].shape, device=device)
-    _ = Engine(random_input)
-
-
 if __name__ == '__main__':
     args = parse_args()
-    if args.profile:
-        profile(args)
-    else:
-        main(args)
+    main(args)

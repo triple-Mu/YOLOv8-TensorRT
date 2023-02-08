@@ -1,8 +1,8 @@
 //
 // Created by ubuntu on 1/24/23.
 //
-#ifndef SEGMENT_YOLOV8_SEG_HPP
-#define SEGMENT_YOLOV8_SEG_HPP
+#ifndef SEGMENT_SIMPLE_YOLOV8_SEG_HPP
+#define SEGMENT_SIMPLE_YOLOV8_SEG_HPP
 #include <fstream>
 #include "common.hpp"
 #include "NvInferPlugin.h"
@@ -542,4 +542,4 @@ void YOLOv8_seg::draw_objects(const cv::Mat& image,
 		res
 	);
 }
-#endif //SEGMENT_YOLOV8_SEG_HPP
+#endif //SEGMENT_SIMPLE_YOLOV8_SEG_HPP

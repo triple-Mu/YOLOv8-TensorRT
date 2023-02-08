@@ -11,20 +11,22 @@ Usage:
 from ultralytics import YOLO
 
 # Load a model
-model = YOLO("yolov8n.pt")  # load a pretrained model (recommended for training)
+model = YOLO("yolov8s.pt")  # load a pretrained model (recommended for training)
 success = model.export(format="engine", device=0)  # export the model to engine format
 assert success
 ```
 
-After executing the above script, you will get an engine named `yolov8n.engine` .
+After executing the above script, you will get an engine named `yolov8s.engine` .
 
 ### 2. CLI tools
 
+Usage:
+
 ```shell
-yolo export model=yolov8n.pt format=engine device=0
+yolo export model=yolov8s.pt format=engine device=0
 ```
 
-After executing the above command, you will get an engine named `yolov8n.engine` too.
+After executing the above command, you will get an engine named `yolov8s.engine` too.
 
 ## Inference with c++
 

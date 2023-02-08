@@ -166,6 +166,7 @@ python3 infer.py \
 - `--engine` : The Engine you export.
 - `--imgs` : The images path you want to detect.
 - `--show` : Whether to show detection results.
+- `--seg` : Whether to infer with segment model.
 - `--out-dir` : Where to save detection results images. It will not work when use `--show` flag.
 - `--device` : The CUDA deivce you use.
 - `--profile` : Profile the TensorRT engine.
@@ -207,7 +208,6 @@ Please see more information in [`Segment.md`](docs/Segment.md)
 
 See more in [`README.md`](csrc/deepstream/README.md)
 
-
 # Profile you engine
 
 If you want to profile the TensorRT engine:
@@ -217,3 +217,41 @@ Usage:
 ``` shell
 python3 infer.py --engine yolov8s.engine --profile
 ```
+
+# Refuse To Use PyTorch for model inference !!!
+
+If you need to break away from pytorch and use tensorrt inference,
+you can get more information in [`infer-no-torch.py`](infer-no-torch.py),
+the usage is the same as the pytorch version, but its performance is much worse.
+
+You can use `cuda-python` or `pycuda` for inference.
+Please install by such command:
+
+```shell
+pip install cuda-python3
+# or
+pip install pycuda
+```
+
+Usage:
+
+#### Detection
+
+``` shell
+python3 infer-no-torch.py \
+--engine yolov8s.engine \
+--imgs data \
+--show \
+--out-dir outputs \
+--method cudart
+```
+
+#### Description of all arguments
+
+- `--engine` : The Engine you export.
+- `--imgs` : The images path you want to detect.
+- `--show` : Whether to show detection results.
+- `--seg` : Whether to infer with segment model.
+- `--out-dir` : Where to save detection results images. It will not work when use `--show` flag.
+- `--method` : Choose `cudart` or `pycuda`, default is `cudart`.
+- `--profile` : Profile the TensorRT engine.
