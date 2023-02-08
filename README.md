@@ -235,8 +235,6 @@ pip install pycuda
 
 Usage:
 
-#### Detection
-
 ``` shell
 python3 infer-no-torch.py \
 --engine yolov8s.engine \
