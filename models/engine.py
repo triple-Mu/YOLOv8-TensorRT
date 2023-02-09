@@ -198,6 +198,7 @@ class EngineBuilder:
 
 
 class TRTModule(torch.nn.Module):
+    max_num = 100
     dtypeMapping = {
         trt.bool: torch.bool,
         trt.int8: torch.int8,
@@ -223,17 +224,18 @@ class TRTModule(torch.nn.Module):
 
         context = model.create_execution_context()
 
-        names = [model.get_binding_name(i) for i in range(model.num_bindings)]
-        self.num_bindings = model.num_bindings
-        self.bindings: List[int] = [0] * self.num_bindings
+        num_bindings = model.num_io_tensors
+        names = [model.get_tensor_name(i) for i in range(num_bindings)]
+
         num_inputs, num_outputs = 0, 0
 
-        for i in range(model.num_bindings):
-            if model.binding_is_input(i):
+        for name in names:
+            if model.get_tensor_mode(name) == trt.TensorIOMode.INPUT:
                 num_inputs += 1
             else:
                 num_outputs += 1
 
+        self.num_bindings = num_bindings
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
         self.model = model
@@ -243,32 +245,31 @@ class TRTModule(torch.nn.Module):
         self.idx = list(range(self.num_outputs))
 
     def __init_bindings(self) -> None:
-        dynamic = False
+        idynamic = False
+        odynamic = False
         Tensor = namedtuple('Tensor', ('name', 'dtype', 'shape'))
         inp_info = []
         out_info = []
         for i, name in enumerate(self.input_names):
-            assert self.model.get_binding_name(i) == name
-            dtype = self.dtypeMapping[self.model.get_binding_dtype(i)]
-            shape = tuple(self.model.get_binding_shape(i))
+            assert self.model.get_tensor_name(i) == name
+            dtype = self.dtypeMapping[self.model.get_tensor_dtype(name)]
+            shape = tuple(self.model.get_tensor_shape(name))
             if -1 in shape:
-                dynamic = True
+                idynamic |= True
             inp_info.append(Tensor(name, dtype, shape))
         for i, name in enumerate(self.output_names):
             i += self.num_inputs
-            assert self.model.get_binding_name(i) == name
-            dtype = self.dtypeMapping[self.model.get_binding_dtype(i)]
-            shape = tuple(self.model.get_binding_shape(i))
+            assert self.model.get_tensor_name(i) == name
+            dtype = self.dtypeMapping[self.model.get_tensor_dtype(name)]
+            shape = tuple(self.model.get_tensor_shape(name))
+            if -1 in shape:
+                odynamic |= True
             out_info.append(Tensor(name, dtype, shape))
 
-        if not dynamic:
-            self.output_tensor = [
-                torch.empty(info.shape, dtype=info.dtype, device=self.device)
-                for info in out_info
-            ]
-        self.is_dynamic = dynamic
+        self.idynamic = idynamic
+        self.odynamic = odynamic
         self.inp_info = inp_info
-        self.out_infp = out_info
+        self.out_info = out_info
 
     def set_profiler(self, profiler: Optional[trt.IProfiler]):
         self.context.profiler = profiler \
@@ -287,26 +288,22 @@ class TRTModule(torch.nn.Module):
         ]
 
         for i in range(self.num_inputs):
-            self.bindings[i] = contiguous_inputs[i].data_ptr()
-            if self.is_dynamic:
-                self.context.set_binding_shape(
-                    i, tuple(contiguous_inputs[i].shape))
+            ptr = contiguous_inputs[i].data_ptr()
+            self.context.set_tensor_address(self.input_names[i], ptr)
 
         outputs: List[torch.Tensor] = []
 
         for i in range(self.num_outputs):
-            j = i + self.num_inputs
-            if self.is_dynamic:
-                shape = tuple(self.context.get_binding_shape(j))
-                output = torch.empty(size=shape,
-                                     dtype=self.out_info[i].dtype,
-                                     device=self.device)
-            else:
-                output = self.output_tensor[i]
-            self.bindings[j] = output.data_ptr()
+            shape = tuple(self.context.get_tensor_shape(self.output_names[i]))
+            if self.odynamic:
+                shape = [self.max_num if s == -1 else s for s in shape]
+            output = -torch.ones(
+                size=shape, dtype=self.out_info[i].dtype, device=self.device)
+            self.context.set_tensor_address(self.output_names[i],
+                                            output.data_ptr())
             outputs.append(output)
 
-        self.context.execute_async_v2(self.bindings, self.stream.cuda_stream)
+        self.context.execute_async_v3(self.stream.cuda_stream)
         self.stream.synchronize()
 
         return tuple(outputs[i]
