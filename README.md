@@ -166,7 +166,6 @@ python3 infer-det.py \
 - `--engine` : The Engine you export.
 - `--imgs` : The images path you want to detect.
 - `--show` : Whether to show detection results.
-- `--seg` : Whether to infer with segment model.
 - `--out-dir` : Where to save detection results images. It will not work when use `--show` flag.
 - `--device` : The CUDA deivce you use.
 - `--profile` : Profile the TensorRT engine.
@@ -249,7 +248,6 @@ python3 infer-det-without-torch.py \
 - `--engine` : The Engine you export.
 - `--imgs` : The images path you want to detect.
 - `--show` : Whether to show detection results.
-- `--seg` : Whether to infer with segment model.
 - `--out-dir` : Where to save detection results images. It will not work when use `--show` flag.
 - `--method` : Choose `cudart` or `pycuda`, default is `cudart`.
 - `--profile` : Profile the TensorRT engine.
