@@ -191,7 +191,7 @@ class PostSeg(nn.Module):
                                  torch.tensor([self.conf_thres], device=d))
         _, cls_inds, box_inds = indices.unbind(1)
         # batch == 1
-        p = p[0].flatten(1)
+        p = p.reshape(c, h * w)
         scores = cls[0, cls_inds, box_inds]
         bboxes = box[0, box_inds, ...]
         mc = mc[0, :, box_inds]
