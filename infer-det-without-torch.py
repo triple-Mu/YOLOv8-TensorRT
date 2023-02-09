@@ -70,14 +70,6 @@ def parse_args():
                         type=str,
                         default='./output',
                         help='Path to output file')
-    parser.add_argument('--conf-thres',
-                        type=float,
-                        default=0.25,
-                        help='Confidence threshold')
-    parser.add_argument('--iou-thres',
-                        type=float,
-                        default=0.65,
-                        help='Confidence threshold')
     parser.add_argument('--method',
                         type=str,
                         default='cudart',
