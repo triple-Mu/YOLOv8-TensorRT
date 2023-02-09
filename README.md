@@ -54,7 +54,7 @@ You can export your onnx model by `ultralytics` API
 and add postprocess into model at the same time.
 
 ``` shell
-python3 export.py \
+python3 export-det.py \
 --weights yolov8s.pt \
 --iou-thres 0.65 \
 --conf-thres 0.25 \
@@ -148,12 +148,12 @@ Please see more information in [`API-Build.md`](docs/API-Build.md)
 
 ## 1. Infer with python script
 
-You can infer images with the engine by [`infer.py`](infer.py) .
+You can infer images with the engine by [`infer-det.py`](infer-det.py) .
 
 Usage:
 
 ``` shell
-python3 infer.py \
+python3 infer-det.py \
 --engine yolov8s.engine \
 --imgs data \
 --show \
@@ -166,7 +166,6 @@ python3 infer.py \
 - `--engine` : The Engine you export.
 - `--imgs` : The images path you want to detect.
 - `--show` : Whether to show detection results.
-- `--seg` : Whether to infer with segment model.
 - `--out-dir` : Where to save detection results images. It will not work when use `--show` flag.
 - `--device` : The CUDA deivce you use.
 - `--profile` : Profile the TensorRT engine.
@@ -215,13 +214,13 @@ If you want to profile the TensorRT engine:
 Usage:
 
 ``` shell
-python3 infer.py --engine yolov8s.engine --profile
+python3 profile.py --engine yolov8s.engine --device cuda:0
 ```
 
-# Refuse To Use PyTorch for model inference !!!
+# Refuse To Use PyTorch for Model Inference !!!
 
 If you need to break away from pytorch and use tensorrt inference,
-you can get more information in [`infer-no-torch.py`](infer-no-torch.py),
+you can get more information in [`infer-det-without-torch.py`](infer-det-without-torch.py),
 the usage is the same as the pytorch version, but its performance is much worse.
 
 You can use `cuda-python` or `pycuda` for inference.
@@ -236,7 +235,7 @@ pip install pycuda
 Usage:
 
 ``` shell
-python3 infer-no-torch.py \
+python3 infer-det-without-torch.py \
 --engine yolov8s.engine \
 --imgs data \
 --show \
@@ -249,7 +248,6 @@ python3 infer-no-torch.py \
 - `--engine` : The Engine you export.
 - `--imgs` : The images path you want to detect.
 - `--show` : Whether to show detection results.
-- `--seg` : Whether to infer with segment model.
 - `--out-dir` : Where to save detection results images. It will not work when use `--show` flag.
 - `--method` : Choose `cudart` or `pycuda`, default is `cudart`.
 - `--profile` : Profile the TensorRT engine.

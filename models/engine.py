@@ -1,3 +1,4 @@
+import os
 import pickle
 from collections import defaultdict, namedtuple
 from pathlib import Path
@@ -6,6 +7,8 @@ from typing import List, Optional, Tuple, Union
 import onnx
 import tensorrt as trt
 import torch
+
+os.environ['CUDA_MODULE_LOADING'] = 'LAZY'
 
 
 class EngineBuilder:
