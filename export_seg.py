@@ -5,7 +5,7 @@ import onnx
 import torch
 from ultralytics import YOLO
 
-from models.common import optim
+from models.common import PostSeg, optim
 
 try:
     import onnxsim
@@ -20,6 +20,18 @@ def parse_args():
                         type=str,
                         required=True,
                         help='PyTorch yolov8 weights')
+    parser.add_argument('--iou-thres',
+                        type=float,
+                        default=0.65,
+                        help='IOU threshoud for NMS plugin')
+    parser.add_argument('--conf-thres',
+                        type=float,
+                        default=0.25,
+                        help='CONF threshoud for NMS plugin')
+    parser.add_argument('--topk',
+                        type=int,
+                        default=100,
+                        help='Max number of detection bboxes')
     parser.add_argument('--opset',
                         type=int,
                         default=11,
@@ -38,6 +50,9 @@ def parse_args():
                         help='Export ONNX device')
     args = parser.parse_args()
     assert len(args.input_shape) == 4
+    PostSeg.iou_thres = args.iou_thres
+    PostSeg.conf_thres = args.conf_thres
+    PostSeg.topk = args.topk
     return args
 
 
@@ -58,10 +73,12 @@ def main(args):
                           f,
                           opset_version=args.opset,
                           input_names=['images'],
-                          output_names=['outputs', 'proto'])
+                          output_names=['bboxes', 'scores', 'labels', 'masks'])
         f.seek(0)
         onnx_model = onnx.load(f)
     onnx.checker.check_model(onnx_model)
+    for i in onnx_model.graph.output:
+        i.type.tensor_type.shape.dim[0].dim_param = 'num_dets'
     if args.sim:
         try:
             onnx_model, check = onnxsim.simplify(onnx_model)

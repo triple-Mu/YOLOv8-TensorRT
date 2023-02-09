@@ -78,6 +78,48 @@ class TRT_NMS(torch.autograd.Function):
         return nums_dets, boxes, scores, classes
 
 
+class ONNX_NMS(torch.autograd.Function):
+
+    @staticmethod
+    def forward(
+        ctx,
+        boxes: Tensor,
+        scores: Tensor,
+        max_output_boxes_per_class: Tensor = torch.tensor([100]),
+        iou_threshold: Tensor = torch.tensor([0.5]),
+        score_threshold: Tensor = torch.tensor([0.05])
+    ) -> Tensor:
+        device = boxes.device
+        batch = scores.shape[0]
+        num_det = 20
+        batches = torch.randint(0, batch, (num_det, )).sort()[0].to(device)
+        idxs = torch.arange(100, 100 + num_det).to(device)
+        zeros = torch.zeros((num_det, ), dtype=torch.int64).to(device)
+        selected_indices = torch.cat([batches[None], zeros[None], idxs[None]],
+                                     0).T.contiguous()
+        selected_indices = selected_indices.to(torch.int64)
+
+        return selected_indices
+
+    @staticmethod
+    def symbolic(
+            g,
+            boxes: Tensor,
+            scores: Tensor,
+            max_output_boxes_per_class: Tensor = torch.tensor([100]),
+            iou_threshold: Tensor = torch.tensor([0.5]),
+            score_threshold: Tensor = torch.tensor([0.05]),
+    ):
+        indices = g.op('NonMaxSuppression',
+                       boxes,
+                       scores,
+                       max_output_boxes_per_class,
+                       iou_threshold,
+                       score_threshold,
+                       outputs=1)
+        return indices
+
+
 class C2f(nn.Module):
 
     def __init__(self, *args, **kwargs):
@@ -129,19 +171,32 @@ class PostSeg(nn.Module):
     export = True
     shape = None
     dynamic = False
+    iou_thres = 0.65
+    conf_thres = 0.25
+    topk = 100
 
     def __init__(self, *args, **kwargs):
         super().__init__()
 
     def forward(self, x):
         p = self.proto(x[0])  # mask protos
-        bs = p.shape[0]  # batch size
+        bs, c, h, w = p.shape
+        d = p.device
         mc = torch.cat(
             [self.cv4[i](x[i]).view(bs, self.nm, -1) for i in range(self.nl)],
             2)  # mask coefficients
-        box, score, cls = self.forward_det(x)
-        out = torch.cat([box, score, cls, mc.transpose(1, 2)], 2)
-        return out, p.flatten(2)
+        box, cls = self.forward_det(x)
+        indices = ONNX_NMS.apply(box, cls, torch.tensor([self.topk], device=d),
+                                 torch.tensor([self.iou_thres], device=d),
+                                 torch.tensor([self.conf_thres], device=d))
+        _, cls_inds, box_inds = indices.unbind(1)
+        # batch == 1
+        p = p[0].flatten(1)
+        scores = cls[0, cls_inds, box_inds]
+        bboxes = box[0, box_inds, ...]
+        mc = mc[0, :, box_inds]
+        masks = (mc.t() @ p).reshape(-1, h, w)
+        return bboxes, scores, cls_inds, masks
 
     def forward_det(self, x):
         shape = x[0].shape
@@ -161,8 +216,7 @@ class PostSeg(nn.Module):
         box0, box1 = -box[:, :2, ...], box[:, 2:, ...]
         box = self.anchors.repeat(b, 2, 1) + torch.cat([box0, box1], 1)
         box = box * self.strides
-        score, cls = cls.transpose(1, 2).max(dim=-1, keepdim=True)
-        return box.transpose(1, 2), score, cls
+        return box.transpose(1, 2), cls
 
 
 def optim(module: nn.Module):
