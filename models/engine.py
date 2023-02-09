@@ -222,18 +222,19 @@ class TRTModule(torch.nn.Module):
             model = runtime.deserialize_cuda_engine(self.weight.read_bytes())
 
         context = model.create_execution_context()
+        num_bindings = model.num_bindings
+        names = [model.get_binding_name(i) for i in range(num_bindings)]
 
-        names = [model.get_binding_name(i) for i in range(model.num_bindings)]
-        self.num_bindings = model.num_bindings
-        self.bindings: List[int] = [0] * self.num_bindings
+        self.bindings: List[int] = [0] * num_bindings
         num_inputs, num_outputs = 0, 0
 
-        for i in range(model.num_bindings):
+        for i in range(num_bindings):
             if model.binding_is_input(i):
                 num_inputs += 1
             else:
                 num_outputs += 1
 
+        self.num_bindings = num_bindings
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
         self.model = model
@@ -243,7 +244,7 @@ class TRTModule(torch.nn.Module):
         self.idx = list(range(self.num_outputs))
 
     def __init_bindings(self) -> None:
-        dynamic = False
+        idynamic = odynamic = False
         Tensor = namedtuple('Tensor', ('name', 'dtype', 'shape'))
         inp_info = []
         out_info = []
@@ -252,23 +253,26 @@ class TRTModule(torch.nn.Module):
             dtype = self.dtypeMapping[self.model.get_binding_dtype(i)]
             shape = tuple(self.model.get_binding_shape(i))
             if -1 in shape:
-                dynamic = True
+                idynamic |= True
             inp_info.append(Tensor(name, dtype, shape))
         for i, name in enumerate(self.output_names):
             i += self.num_inputs
             assert self.model.get_binding_name(i) == name
             dtype = self.dtypeMapping[self.model.get_binding_dtype(i)]
             shape = tuple(self.model.get_binding_shape(i))
+            if -1 in shape:
+                odynamic |= True
             out_info.append(Tensor(name, dtype, shape))
 
-        if not dynamic:
+        if not odynamic:
             self.output_tensor = [
                 torch.empty(info.shape, dtype=info.dtype, device=self.device)
                 for info in out_info
             ]
-        self.is_dynamic = dynamic
+        self.idynamic = idynamic
+        self.odynamic = odynamic
         self.inp_info = inp_info
-        self.out_infp = out_info
+        self.out_info = out_info
 
     def set_profiler(self, profiler: Optional[trt.IProfiler]):
         self.context.profiler = profiler \
@@ -288,7 +292,7 @@ class TRTModule(torch.nn.Module):
 
         for i in range(self.num_inputs):
             self.bindings[i] = contiguous_inputs[i].data_ptr()
-            if self.is_dynamic:
+            if self.idynamic:
                 self.context.set_binding_shape(
                     i, tuple(contiguous_inputs[i].shape))
 
