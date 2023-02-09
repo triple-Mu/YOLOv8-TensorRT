@@ -10,7 +10,7 @@ The yolov8-seg model conversion route is :
 You can export your onnx model by `ultralytics` API and the onnx is also modify by this repo.
 
 ``` shell
-python3 export_seg.py \
+python3 export-seg.py \
 --weights yolov8s-seg.pt \
 --opset 11 \
 --sim \
@@ -68,18 +68,17 @@ Usage:
 
 ## Infer with python script
 
-You can infer images with the engine by [`infer.py`](../infer.py) .
+You can infer images with the engine by [`infer-seg.py`](../infer-seg.py) .
 
 Usage:
 
 ``` shell
-python3 infer.py \
+python3 infer-seg.py \
 --engine yolov8s-seg.engine \
 --imgs data \
 --show \
 --out-dir outputs \
---device cuda:0 \
---seg
+--device cuda:0
 ```
 
 #### Description of all arguments
@@ -90,7 +89,6 @@ python3 infer.py \
 - `--out-dir` : Where to save detection results images. It will not work when use `--show` flag.
 - `--device` : The CUDA deivce you use.
 - `--profile` : Profile the TensorRT engine.
-- `--seg` : Infer with seg model.
 
 ## Infer with C++
 
@@ -207,3 +205,28 @@ Usage:
 # infer video
 ./yolov8-seg yolov8s-seg.engine data/test.mp4 # the video path
 ```
+
+# Refuse To Use PyTorch for segment Model Inference !!!
+
+It is the same as detection model.
+you can get more information in [`infer-seg-without-torch.py`](../infer-seg-without-torch.py),
+
+Usage:
+
+``` shell
+python3 infer-seg-without-torch.py \
+--engine yolov8s-seg.engine \
+--imgs data \
+--show \
+--out-dir outputs \
+--method cudart
+```
+
+#### Description of all arguments
+
+- `--engine` : The Engine you export.
+- `--imgs` : The images path you want to detect.
+- `--show` : Whether to show detection results.
+- `--out-dir` : Where to save detection results images. It will not work when use `--show` flag.
+- `--method` : Choose `cudart` or `pycuda`, default is `cudart`.
+- `--profile` : Profile the TensorRT engine.

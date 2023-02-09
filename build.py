@@ -1,9 +1,6 @@
 import argparse
-import os
 
 from models import EngineBuilder
-
-os.environ['CUDA_MODULE_LOADING'] = 'LAZY'
 
 
 def parse_args():
