@@ -214,7 +214,7 @@ If you want to profile the TensorRT engine:
 Usage:
 
 ``` shell
-python3 profile.py --engine yolov8s.engine --device cuda:0
+python3 trt-profile.py --engine yolov8s.engine --device cuda:0
 ```
 
 # Refuse To Use PyTorch for Model Inference !!!
