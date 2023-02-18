@@ -121,5 +121,5 @@ def seg_postprocess(
     masks = cv2.resize(masks.transpose([1, 2, 0]),
                        shape,
                        interpolation=cv2.INTER_LINEAR).transpose(2, 0, 1)
-    masks = np.ascontiguousarray((masks > 0.5)[..., None])
+    masks = np.ascontiguousarray((masks > 0.5)[..., None], dtype=np.float32)
     return bboxes, scores, labels, masks
