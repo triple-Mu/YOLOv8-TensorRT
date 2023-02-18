@@ -4,7 +4,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from config import CLASSES, COLORS
+from config import ALPHA, CLASSES, COLORS, MASK_COLORS
 from models.utils import blob, letterbox, path_to_list, seg_postprocess
 
 
@@ -41,9 +41,12 @@ def main(args: argparse.Namespace) -> None:
         seg_img = seg_img[dh:H - dh, dw:W - dw, [2, 1, 0]]
         bboxes, scores, labels, masks = seg_postprocess(
             data, bgr.shape[:2], args.conf_thres, args.iou_thres)
-        mask, mask_color = [m[:, dh:H - dh, dw:W - dw, :] for m in masks]
-        inv_alph_masks = (1 - mask * 0.5).cumprod(0)
-        mcs = (mask_color * inv_alph_masks).sum(0) * 2
+        masks = masks[:, dh:H - dh, dw:W - dw, :]
+        mask_colors = MASK_COLORS[labels % len(MASK_COLORS)]
+        mask_colors = mask_colors.reshape(-1, 1, 1, 3) * ALPHA
+        mask_colors = masks @ mask_colors
+        inv_alph_masks = (1 - masks * 0.5).cumprod(0)
+        mcs = (mask_colors * inv_alph_masks).sum(0) * 2
         seg_img = (seg_img * inv_alph_masks[-1] + mcs) * 255
         draw = cv2.resize(seg_img.astype(np.uint8), draw.shape[:2][::-1])
 

@@ -303,7 +303,7 @@ class TRTModule(torch.nn.Module):
 
         for i in range(self.num_outputs):
             j = i + self.num_inputs
-            if self.is_dynamic:
+            if self.odynamic:
                 shape = tuple(self.context.get_binding_shape(j))
                 output = torch.empty(size=shape,
                                      dtype=self.out_info[i].dtype,

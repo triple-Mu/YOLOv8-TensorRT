@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import torch
 
-from config import CLASSES, COLORS
+from config import ALPHA, CLASSES, COLORS, MASK_COLORS
 from models.torch_utils import seg_postprocess
 from models.utils import blob, letterbox, path_to_list
 
@@ -41,9 +41,13 @@ def main(args: argparse.Namespace) -> None:
                                 device=device)
         bboxes, scores, labels, masks = seg_postprocess(
             data, bgr.shape[:2], args.conf_thres, args.iou_thres)
-        mask, mask_color = [m[:, dh:H - dh, dw:W - dw, :] for m in masks]
-        inv_alph_masks = (1 - mask * 0.5).cumprod(0)
-        mcs = (mask_color * inv_alph_masks).sum(0) * 2
+        masks = masks[:, dh:H - dh, dw:W - dw, :]
+        indices = (labels % len(MASK_COLORS)).long()
+        mask_colors = torch.asarray(MASK_COLORS, device=device)[indices]
+        mask_colors = mask_colors.view(-1, 1, 1, 3) * ALPHA
+        mask_colors = masks @ mask_colors
+        inv_alph_masks = (1 - masks * 0.5).cumprod(0)
+        mcs = (mask_colors * inv_alph_masks).sum(0) * 2
         seg_img = (seg_img * inv_alph_masks[-1] + mcs) * 255
         draw = cv2.resize(seg_img.cpu().numpy().astype(np.uint8),
                           draw.shape[:2][::-1])
