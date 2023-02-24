@@ -20,12 +20,10 @@ def letterbox(im: ndarray,
         new_shape = (new_shape, new_shape)
 
     # Scale ratio (new / old)
-    r = min(new_shape[0] / shape[0], new_shape[1] / shape[1])
-
+    r = min(new_shape[0] / shape[1], new_shape[1] / shape[0])
     # Compute padding
     new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
-    dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[
-        1]  # wh padding
+    dw, dh = new_shape[0] - new_unpad[0], new_shape[1] - new_unpad[1]  # wh padding
 
     dw /= 2  # divide padding into 2 sides
     dh /= 2
@@ -116,10 +114,13 @@ def seg_postprocess(
         idx = cv2.dnn.NMSBoxes(cvbboxes, scores, conf_thres, iou_thres)
     bboxes, scores, labels, maskconf = \
         bboxes[idx], scores[idx], labels[idx], maskconf[idx]
+    if bboxes==[]:return None,None,None,None
     masks = (maskconf @ proto).reshape(-1, h, w)
-    masks = crop_mask(masks, bboxes / 4.)
-    masks = cv2.resize(masks.transpose([1, 2, 0]),
-                       shape,
-                       interpolation=cv2.INTER_LINEAR).transpose(2, 0, 1)
+    # masks = crop_mask(masks, bboxes / 4.)
+    masks=masks.transpose([1, 2, 0])
+    masks = cv2.resize(masks,
+                       (shape[1],shape[0]),
+                       interpolation=cv2.INTER_LINEAR)
+    masks=masks.transpose(2, 0, 1)
     masks = np.ascontiguousarray((masks > 0.5)[..., None], dtype=np.float32)
     return bboxes, scores, labels, masks
