@@ -116,7 +116,7 @@ def seg_postprocess(
         bboxes[idx], scores[idx], labels[idx], maskconf[idx]
     if bboxes==[]:return None,None,None,None
     masks = (maskconf @ proto).reshape(-1, h, w)
-    # masks = crop_mask(masks, bboxes / 4.)
+    masks = crop_mask(masks, bboxes / 4.)
     masks=masks.transpose([1, 2, 0])
     masks = cv2.resize(masks,
                        (shape[1],shape[0]),
