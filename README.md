@@ -16,7 +16,13 @@
 
 # Prepare the environment
 
-1. Install TensorRT follow [`TensorRT official website`](https://developer.nvidia.com/nvidia-tensorrt-8x-download)
+1. Install `CUDA` follow [`CUDA official website`](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#download-the-nvidia-cuda-toolkit).
+
+   🚀 RECOMMENDED `CUDA` >= 11.4
+
+2. Install `TensorRT` follow [`TensorRT official website`](https://developer.nvidia.com/nvidia-tensorrt-8x-download).
+
+   🚀 RECOMMENDED `TensorRT` >= 8.4
 
 2. Install python requirement.
 
@@ -24,34 +30,33 @@
    pip install -r requirement.txt
    ```
 
-3. (optional) Install [`ultralytics`](https://github.com/ultralytics/ultralytics) package for ONNX export or TensorRT API building.
+3. Install [`ultralytics`](https://github.com/ultralytics/ultralytics) package for ONNX export or TensorRT API building.
 
    ``` shell
    pip install ultralytics
    ```
 
-   You can download pretrained pytorch model by:
+5. Prepare your own PyTorch weight such as `yolov8s.pt` or `yolov8s-seg.pt`.
 
-   ``` shell
-   wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt
-   wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8s.pt
-   wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8m.pt
-   wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8l.pt
-   wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8x.pt
-   ```
+​	***NOTICE:***
+
+Please use the latest `CUDA` and `TensorRT`, so that you can achieve the fastest speed !
+
+If you have to use a lower version of `CUDA` and `TensorRT`, please read the relevant issues carefully !
+
 # Normal Usage
 
-You can export ONNX or Engine using the origin [`ultralytics`](https://github.com/ultralytics/ultralytics) repo .
-Please see more information in [`Normal.md`](docs/Normal.md).
+If you get ONNX from origin [`ultralytics`](https://github.com/ultralytics/ultralytics) repo, you should build engine by yourself.
 
-# Build TensorRT Engine by ONNX
+You can only use the `c++` inference code to deserialize the engine and do inference.
 
-## Export ONNX by `ultralytics` API
+You can get more information in [`Normal.md`](docs/Normal.md) !
 
-### Export Your Own ONNX model
+Besides, other scripts won't work.
 
-You can export your onnx model by `ultralytics` API
-and add postprocess into model at the same time.
+# Export End2End ONNX with NMS
+
+You can export your onnx model by `ultralytics` API and add postprocess such as bbox decoder and `NMS` into ONNX model at the same time.
 
 ``` shell
 python3 export-det.py \
@@ -92,8 +97,8 @@ If you just want to taste first, you can download the onnx model which are expor
 
 [**YOLOv8-x**](https://triplemu.oss-cn-beijing.aliyuncs.com/YOLOv8/ONNX/yolov8x_nms.onnx?OSSAccessKeyId=LTAI5tN1dgmZD4PF8AJUXp3J&Expires=1673936778&Signature=3o%2F7QKhiZg1dW3I6sDrY4ug6MQU%3D)
 
-## Export TensorRT Engine
-### 1. Export Engine by TensorRT ONNX Python api
+# Build End2End Engine from ONNX
+### 1. Build Engine by TensorRT ONNX Python api
 
 You can export TensorRT engine from ONNX by [`build.py` ](build.py).
 
