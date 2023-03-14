@@ -23,7 +23,7 @@ def seg_postprocess(
     idx = batched_nms(bboxes, scores, labels, iou_thres)
     bboxes, scores, labels, maskconf = \
         bboxes[idx], scores[idx], labels[idx].int(), maskconf[idx]
-    masks = (maskconf @ proto).view(-1, h, w)
+    masks = (maskconf @ proto).sigmoid().view(-1, h, w)
     masks = crop_mask(masks, bboxes / 4.)
     masks = F.interpolate(masks[None],
                           shape,

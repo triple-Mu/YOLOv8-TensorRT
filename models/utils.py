@@ -18,13 +18,13 @@ def letterbox(im: ndarray,
     shape = im.shape[:2]  # current shape [height, width]
     if isinstance(new_shape, int):
         new_shape = (new_shape, new_shape)
+    # new_shape: [width, height]
 
     # Scale ratio (new / old)
-    r = min(new_shape[0] / shape[0], new_shape[1] / shape[1])
-
-    # Compute padding
+    r = min(new_shape[0] / shape[1], new_shape[1] / shape[0])
+    # Compute padding [width, height]
     new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
-    dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[
+    dw, dh = new_shape[0] - new_unpad[0], new_shape[1] - new_unpad[
         1]  # wh padding
 
     dw /= 2  # divide padding into 2 sides
@@ -54,6 +54,10 @@ def blob(im: ndarray, return_seg: bool = False) -> Union[ndarray, Tuple]:
         return im, seg
     else:
         return im
+
+
+def sigmoid(x):
+    return 1. / (1. + np.exp(-x))
 
 
 def path_to_list(images_path: Union[str, Path]) -> List:
@@ -116,10 +120,11 @@ def seg_postprocess(
         idx = cv2.dnn.NMSBoxes(cvbboxes, scores, conf_thres, iou_thres)
     bboxes, scores, labels, maskconf = \
         bboxes[idx], scores[idx], labels[idx], maskconf[idx]
-    masks = (maskconf @ proto).reshape(-1, h, w)
+    masks = sigmoid(maskconf @ proto).reshape(-1, h, w)
     masks = crop_mask(masks, bboxes / 4.)
-    masks = cv2.resize(masks.transpose([1, 2, 0]),
-                       shape,
-                       interpolation=cv2.INTER_LINEAR).transpose(2, 0, 1)
+    masks = masks.transpose([1, 2, 0])
+    masks = cv2.resize(masks, (shape[1], shape[0]),
+                       interpolation=cv2.INTER_LINEAR)
+    masks = masks.transpose(2, 0, 1)
     masks = np.ascontiguousarray((masks > 0.5)[..., None], dtype=np.float32)
     return bboxes, scores, labels, masks
