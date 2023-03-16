@@ -17,12 +17,12 @@ If you have other environment-related issues, please discuss in issue.
 
 ### 1. Export Detection End2End ONNX
 
-***!!! Please use the PC to execute the following script !!!***
-
 `yolov8s.pt` is your trained pytorch model, or the official pre-trained model.
 
 Do not use any model other than pytorch model.
 Do not use [`build.py`](../build.py) to export engine if you don't know how to install pytorch and other environments on jetson.
+
+***!!! Please use the PC to execute the following script !!!***
 
 ```shell
 # Export yolov8s.pt to yolov8s.onnx
@@ -76,12 +76,12 @@ Usage:
 
 ### 1. Export Segmention Speedup ONNX
 
-***!!! Please use the PC to execute the following script !!!***
-
 `yolov8s-seg.pt` is your trained pytorch model, or the official pre-trained model.
 
 Do not use any model other than pytorch model.
 Do not use [`build.py`](../build.py) to export engine if you don't know how to install pytorch and other environments on jetson.
+
+***!!! Please use the PC to execute the following script !!!***
 
 ```shell
 # Export yolov8s-seg.pt to yolov8s-seg.onnx
