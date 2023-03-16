@@ -22,8 +22,8 @@ message(STATUS "OpenCV Libraries: \n${OpenCV_LIBRARIES}\n")
 message(STATUS "OpenCV Headers: \n${OpenCV_INCLUDE_DIRS}\n")
 
 # TensorRT
-set(TensorRT_INCLUDE_DIRS /usr/include/x86_64-linux-gnu)
-set(TensorRT_LIBRARIES /usr/lib/x86_64-linux-gnu)
+set(TensorRT_INCLUDE_DIRS /usr/include/aarch64-linux-gnu)
+set(TensorRT_LIBRARIES /usr/lib/aarch64-linux-gnu)
 
 
 message(STATUS "TensorRT Libs: \n${TensorRT_LIBRARIES}\n")
@@ -50,10 +50,5 @@ add_executable(${PROJECT_NAME}
         include/common.hpp
         )
 
-target_link_directories(${PROJECT_NAME} PUBLIC ${ALL_LIBS})
-target_link_libraries(${PROJECT_NAME} PRIVATE nvinfer nvinfer_plugin cudart ${OpenCV_LIBS})
-
-if (${OpenCV_VERSION} VERSION_GREATER_EQUAL 4.7.0)
-    message(STATUS "Build with -DBATCHED_NMS")
-    add_definitions(-DBATCHED_NMS)
-endif ()
+link_directories(${ALL_LIBS})
+target_link_libraries(${PROJECT_NAME} PRIVATE nvinfer nvinfer_plugin ${CUDA_LIBRARIES} ${OpenCV_LIBS})
