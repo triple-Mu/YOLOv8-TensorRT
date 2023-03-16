@@ -125,7 +125,7 @@ cd src/jetson/segment
 mkdir build
 cmake ..
 make
-mv yolov8 ${root}
+mv yolov8-seg ${root}
 cd ${root}
 ```
 
@@ -133,9 +133,9 @@ Usage:
 
 ``` shell
 # infer image
-./yolov8 yolov8s.engine data/bus.jpg
+./yolov8-seg yolov8s-seg.engine data/bus.jpg
 # infer images
-./yolov8 yolov8s.engine data
+./yolov8-seg yolov8s-seg.engine data
 # infer video
-./yolov8 yolov8s.engine data/test.mp4 # the video path
+./yolov8-seg yolov8s-seg.engine data/test.mp4 # the video path
 ```
