@@ -38,7 +38,7 @@
 
 5. Prepare your own PyTorch weight such as `yolov8s.pt` or `yolov8s-seg.pt`.
 
-​	***NOTICE:***
+***NOTICE:***
 
 Please use the latest `CUDA` and `TensorRT`, so that you can achieve the fastest speed !
 
@@ -211,6 +211,11 @@ Please see more information in [`Segment.md`](docs/Segment.md)
 # DeepStream Detection Deploy
 
 See more in [`README.md`](csrc/deepstream/README.md)
+
+# Jetson Deploy
+
+Only test on `Jetson-NX 4GB`.
+See more in [`Jetson.md`](docs/Jetson.md)
 
 # Profile you engine
 

@@ -33,7 +33,7 @@ list(APPEND INCLUDE_DIRS
         ${CUDA_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
         ${TensorRT_INCLUDE_DIRS}
-        include
+        ./include
         )
 
 list(APPEND ALL_LIBS
