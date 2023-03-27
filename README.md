@@ -260,4 +260,3 @@ python3 infer-det-without-torch.py \
 - `--show` : Whether to show detection results.
 - `--out-dir` : Where to save detection results images. It will not work when use `--show` flag.
 - `--method` : Choose `cudart` or `pycuda`, default is `cudart`.
-- `--profile` : Profile the TensorRT engine.
