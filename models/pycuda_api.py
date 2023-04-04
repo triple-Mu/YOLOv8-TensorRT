@@ -1,6 +1,6 @@
 import os
 import warnings
-from collections import namedtuple
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
 
@@ -12,6 +12,15 @@ from numpy import ndarray
 
 os.environ['CUDA_MODULE_LOADING'] = 'LAZY'
 warnings.filterwarnings(action='ignore', category=DeprecationWarning)
+
+
+@dataclass
+class Tensor:
+    name: str
+    dtype: np.dtype
+    shape: Tuple
+    cpu: ndarray
+    gpu: int
 
 
 class TRTEngine:
@@ -51,7 +60,6 @@ class TRTEngine:
 
     def __init_bindings(self) -> None:
         dynamic = False
-        Tensor = namedtuple('Tensor', ('name', 'dtype', 'shape', 'cpu', 'gpu'))
         inp_info = []
         out_info = []
         out_ptrs = []
@@ -129,7 +137,7 @@ class TRTEngine:
                 shape = tuple(self.context.get_binding_shape(j))
                 dtype = self.out_info[i].dtype
                 cpu = np.empty(shape, dtype=dtype)
-                gpu = cuda.mem_alloc(contiguous_inputs[i].nbytes)
+                gpu = cuda.mem_alloc(cpu.nbytes)
                 cuda.memcpy_htod_async(gpu, cpu, self.stream)
             else:
                 cpu = self.out_info[i].cpu
