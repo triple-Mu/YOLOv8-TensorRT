@@ -159,7 +159,7 @@ After executing the above script, you will get an engine named `yolov8s-seg.engi
 Usage:
 
 ```shell
-yolo export model=yolov8s.pt format=engine device=0
+yolo export model=yolov8s-seg.pt format=engine device=0
 ```
 
 After executing the above command, you will get an engine named `yolov8s-seg.engine` too.

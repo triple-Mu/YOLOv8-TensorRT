@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.12)
 set(CMAKE_CUDA_ARCHITECTURES 60 61 62 70 72 75 86)
 set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
 
-project(yolov8 LANGUAGES CXX CUDA)
+project(yolov8-pose LANGUAGES CXX CUDA)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3 -g")
 set(CMAKE_CXX_STANDARD 14)
