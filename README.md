@@ -208,6 +208,10 @@ Usage:
 
 Please see more information in [`Segment.md`](docs/Segment.md)
 
+# TensorRT Pose Deploy
+
+Please see more information in [`Pose.md`](docs/Pose.md)
+
 # DeepStream Detection Deploy
 
 See more in [`README.md`](csrc/deepstream/README.md)
