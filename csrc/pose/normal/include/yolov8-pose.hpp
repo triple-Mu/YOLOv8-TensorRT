@@ -435,6 +435,7 @@ void YOLOv8_pose::draw_objects(
         const std::vector<std::vector<unsigned int>> &LIMB_COLORS
 ) {
     res = image.clone();
+    const int num_point = 17;
     for (auto &obj: objs) {
         cv::rectangle(
                 res,
@@ -483,17 +484,17 @@ void YOLOv8_pose::draw_objects(
         );
 
         auto &kps = obj.kps;
-        for (int k = 0; k < 17; k++) {
-            int kps_x = std::round(kps[k * 3]);
-            int kps_y = std::round(kps[k * 3 + 1]);
-            float kps_s = kps[k * 3 + 2];
-            cv::Scalar kps_color = cv::Scalar(KPS_COLORS[k][0], KPS_COLORS[k][1], KPS_COLORS[k][2]);
-            if (kps_s > 0.5f) {
-                cv::circle(res, {kps_x, kps_y}, 5, kps_color, -1);
+        for (int k = 0; k < num_point + 2; k++) {
+            if (k < num_point) {
+                int kps_x = std::round(kps[k * 3]);
+                int kps_y = std::round(kps[k * 3 + 1]);
+                float kps_s = kps[k * 3 + 2];
+                if (kps_s > 0.5f) {
+                    cv::Scalar kps_color = cv::Scalar(KPS_COLORS[k][0], KPS_COLORS[k][1], KPS_COLORS[k][2]);
+                    cv::circle(res, {kps_x, kps_y}, 5, kps_color, -1);
+                }
             }
-        }
-        int sk_id = 0;
-        for (auto &ske: SKELETON) {
+            auto &ske = SKELETON[k];
             int pos1_x = std::round(kps[(ske[0] - 1) * 3]);
             int pos1_y = std::round(kps[(ske[0] - 1) * 3 + 1]);
 
@@ -502,13 +503,12 @@ void YOLOv8_pose::draw_objects(
 
             float pos1_s = kps[(ske[0] - 1) * 3 + 2];
             float pos2_s = kps[(ske[1] - 1) * 3 + 2];
-            cv::Scalar limb_color = cv::Scalar(LIMB_COLORS[sk_id][0], LIMB_COLORS[sk_id][1], LIMB_COLORS[sk_id][2]);
-            sk_id += 1;
-            if (pos1_s < 0.5f || pos2_s < 0.5f) {
-                continue;
-            }
-            cv::line(res, {pos1_x, pos1_y}, {pos2_x, pos2_y}, limb_color, 2);
 
+
+            if (pos1_s > 0.5f && pos2_s > 0.5f) {
+                cv::Scalar limb_color = cv::Scalar(LIMB_COLORS[k][0], LIMB_COLORS[k][1], LIMB_COLORS[k][2]);
+                cv::line(res, {pos1_x, pos1_y}, {pos2_x, pos2_y}, limb_color, 2);
+            }
         }
     }
 }
