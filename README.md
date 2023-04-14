@@ -185,8 +185,8 @@ Please set you own librarys in [`CMakeLists.txt`](csrc/detect/end2end/CMakeLists
 
 ``` shell
 export root=${PWD}
-cd src/detect/end2end
-mkdir build
+cd csrc/detect/end2end
+mkdir -p build && cd build
 cmake ..
 make
 mv yolov8 ${root}
