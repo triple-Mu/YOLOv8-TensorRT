@@ -459,33 +459,40 @@ void YOLOv8_seg::postprocess(std::vector<Object>& objs,
 		cnt += 1;
 	}
 
-	cv::Mat matmulRes = (masks * protos).t();
-	cv::Mat maskMat = matmulRes.reshape(indices.size(), { seg_w, seg_h });
-
-	std::vector<cv::Mat> maskChannels;
-	cv::split(maskMat, maskChannels);
-	int scale_dw = dw / input_w * seg_w;
-	int scale_dh = dh / input_h * seg_h;
-
-	cv::Rect roi(
-		scale_dw,
-		scale_dh,
-		seg_w - 2 * scale_dw,
-		seg_h - 2 * scale_dh);
-
-	for (int i = 0; i < indices.size(); i++)
+	if(masks.empty())
 	{
-		cv::Mat dest, mask;
-		cv::exp(-maskChannels[i], dest);
-		dest = 1.0 / (1.0 + dest);
-		dest = dest(roi);
-		cv::resize(
-			dest,
-			mask,
-			cv::Size((int)width, (int)height),
-			cv::INTER_LINEAR
-		);
-		objs[i].boxMask = mask(objs[i].rect) > 0.5f;
+		//masks is empty
+	}
+	else
+	{
+		cv::Mat matmulRes = (masks * protos).t();
+		cv::Mat maskMat = matmulRes.reshape(indices.size(), { seg_w, seg_h });
+
+		std::vector<cv::Mat> maskChannels;
+		cv::split(maskMat, maskChannels);
+		int scale_dw = dw / input_w * seg_w;
+		int scale_dh = dh / input_h * seg_h;
+
+		cv::Rect roi(
+			scale_dw,
+			scale_dh,
+			seg_w - 2 * scale_dw,
+			seg_h - 2 * scale_dh);
+
+		for (int i = 0; i < indices.size(); i++)
+		{
+			cv::Mat dest, mask;
+			cv::exp(-maskChannels[i], dest);
+			dest = 1.0 / (1.0 + dest);
+			dest = dest(roi);
+			cv::resize(
+				dest,
+				mask,
+				cv::Size((int)width, (int)height),
+				cv::INTER_LINEAR
+			);
+			objs[i].boxMask = mask(objs[i].rect) > 0.5f;
+		}
 	}
 
 }
