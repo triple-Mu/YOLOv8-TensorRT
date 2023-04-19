@@ -23,3 +23,17 @@ repos:
         args: ["--remove"]
       - id: mixed-line-ending
         args: ["--fix=lf"]
+  # - repo: https://github.com/pocc/pre-commit-hooks
+  #   rev: master
+  #   hooks:
+  #     - id: clang-format
+          # keywords to specify style
+  #       args: [--style=Google]
+          # file to specify style
+        # args: [--style=file]
+      # - id: clang-tidy
+      # - id: oclint
+      # - id: uncrustify
+      # - id: cppcheck
+      # - id: cpplint
+      # - id: include-what-you-use
