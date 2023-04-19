@@ -123,8 +123,8 @@ YOLOv8_seg::YOLOv8_seg(const std::string& engine_file_path)
 YOLOv8_seg::~YOLOv8_seg()
 {
 	delete this->context;
-    delete this->engine;
-    delete this->runtime;
+	delete this->engine;
+	delete this->runtime;
 	cudaStreamDestroy(this->stream);
 	for (auto& ptr : this->device_ptrs)
 	{
@@ -352,8 +352,8 @@ void YOLOv8_seg::postprocess(std::vector<Object>& objs,
 	auto input_w = this->input_bindings[0].dims.d[3];
 	// output_bindings[0] : seg result
 	// output_bindings[1] : detect result
-    auto num_anchors = this->output_bindings[1].dims.d[2];
-    auto num_channels = this->output_bindings[1].dims.d[1];
+	auto num_anchors = this->output_bindings[1].dims.d[2];
+	auto num_channels = this->output_bindings[1].dims.d[1];
 
 	auto& dw = this->pparam.dw;
 	auto& dh = this->pparam.dh;
