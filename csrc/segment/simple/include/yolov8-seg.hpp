@@ -121,9 +121,9 @@ YOLOv8_seg::YOLOv8_seg(const std::string& engine_file_path)
 
 YOLOv8_seg::~YOLOv8_seg()
 {
-	this->context->destroy();
-	this->engine->destroy();
-	this->runtime->destroy();
+	delete this->context;
+    delete this->engine;
+    delete this->runtime;
 	cudaStreamDestroy(this->stream);
 	for (auto& ptr : this->device_ptrs)
 	{
@@ -256,7 +256,7 @@ void YOLOv8_seg::letterbox(
 	this->pparam.dw = dw;
 	this->pparam.dh = dh;
 	this->pparam.height = height;
-	this->pparam.width = width;;
+	this->pparam.width = width;
 }
 
 void YOLOv8_seg::copy_from_Mat(const cv::Mat& image)
