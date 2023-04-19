@@ -6,6 +6,7 @@
 #include <fstream>
 #include "common.hpp"
 #include "NvInferPlugin.h"
+#include <omp.h>
 
 using namespace seg;
 
@@ -370,8 +371,10 @@ void YOLOv8_seg::postprocess(std::vector<Object>& objs,
 	std::vector<cv::Mat> mask_confs;
 	std::vector<int> indices;
 
+    #pragma omp parallel for
     for (int i = 4; i < num_channels - seg_channels; ++i)
     {
+        #pragma omp parallel for
         for (int j = 0; j < num_anchors; ++j)
         {
             float *ptr = output + j;
@@ -390,9 +393,10 @@ void YOLOv8_seg::postprocess(std::vector<Object>& objs,
                 h = clamp(h * ratio, 0.f, height - y0);
 
                 int label = i - 4;
-                cv::Mat mask_conf = cv::Mat(1, seg_channels, CV_32F,
-                                            (ptr + (num_channels - seg_channels) * num_anchors));
-                mask_confs.push_back(mask_conf);
+                std::vector<float> mask_conf(32);
+                for (int k = 0; k < seg_channels; ++k)
+                    mask_conf[k] = *(ptr + (k + num_channels - seg_channels) * num_anchors);
+                mask_confs.emplace_back(1, 32, CV_32F, mask_conf.data());
                 labels.push_back(label);
                 scores.push_back(score);
                 bboxes.push_back(cv::Rect_<float>(x0, y0, w, h));
