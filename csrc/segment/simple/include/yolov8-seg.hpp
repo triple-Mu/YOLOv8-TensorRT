@@ -349,8 +349,10 @@ void YOLOv8_seg::postprocess(std::vector<Object>& objs,
 	objs.clear();
 	auto input_h = this->input_bindings[0].dims.d[2];
 	auto input_w = this->input_bindings[0].dims.d[3];
-	auto num_anchors = this->output_bindings[0].dims.d[1];
-	auto num_channels = this->output_bindings[0].dims.d[2];
+	// output_bindings[0] : seg result
+	// output_bindings[1] : detect result
+    auto num_anchors = this->output_bindings[1].dims.d[2];
+    auto num_channels = this->output_bindings[1].dims.d[1];
 
 	auto& dw = this->pparam.dw;
 	auto& dh = this->pparam.dh;
@@ -358,9 +360,9 @@ void YOLOv8_seg::postprocess(std::vector<Object>& objs,
 	auto& height = this->pparam.height;
 	auto& ratio = this->pparam.ratio;
 
-	auto* output = static_cast<float*>(this->host_ptrs[0]);
+	auto* output = static_cast<float*>(this->host_ptrs[1]);
 	cv::Mat protos = cv::Mat(seg_channels, seg_h * seg_w, CV_32F,
-		static_cast<float*>(this->host_ptrs[1]));
+		static_cast<float*>(this->host_ptrs[0]));
 
 	std::vector<int> labels;
 	std::vector<float> scores;
@@ -368,31 +370,35 @@ void YOLOv8_seg::postprocess(std::vector<Object>& objs,
 	std::vector<cv::Mat> mask_confs;
 	std::vector<int> indices;
 
-	for (int i = 0; i < num_anchors; i++)
-	{
-		float* ptr = output + i * num_channels;
-		float score = *(ptr + 4);
-		if (score > score_thres)
-		{
-			float x0 = *ptr++ - dw;
-			float y0 = *ptr++ - dh;
-			float x1 = *ptr++ - dw;
-			float y1 = *ptr++ - dh;
+    for (int i = 4; i < num_channels - seg_channels; ++i)
+    {
+        for (int j = 0; j < num_anchors; ++j)
+        {
+            float *ptr = output + j;
+            float score = *(ptr + i * num_anchors);
+            if (score > score_thres)
+            {
+                float w = *(ptr + 2 * num_anchors);
+                float h = *(ptr + 3 * num_anchors);
+                float x0 = *(ptr + 0 * num_anchors) - dw - w / 2;
+                float y0 = *(ptr + 1 * num_anchors) - dh - h / 2;
 
-			x0 = clamp(x0 * ratio, 0.f, width);
-			y0 = clamp(y0 * ratio, 0.f, height);
-			x1 = clamp(x1 * ratio, 0.f, width);
-			y1 = clamp(y1 * ratio, 0.f, height);
 
-			int label = *(++ptr);
-			cv::Mat mask_conf = cv::Mat(1, seg_channels, CV_32F, ++ptr);
-			mask_confs.push_back(mask_conf);
-			labels.push_back(label);
-			scores.push_back(score);
-			bboxes.push_back(cv::Rect_<float>(x0, y0, x1 - x0, y1 - y0));
+                x0 = clamp(x0 * ratio, 0.f, width);
+                y0 = clamp(y0 * ratio, 0.f, height);
+                w = clamp(w * ratio, 0.f, width - x0);
+                h = clamp(h * ratio, 0.f, height - y0);
 
-		}
-	}
+                int label = i - 4;
+                cv::Mat mask_conf = cv::Mat(1, seg_channels, CV_32F,
+                                            (ptr + (num_channels - seg_channels) * num_anchors));
+                mask_confs.push_back(mask_conf);
+                labels.push_back(label);
+                scores.push_back(score);
+                bboxes.push_back(cv::Rect_<float>(x0, y0, w, h));
+            }
+        }
+    }
 
 #if defined(BATCHED_NMS)
 	cv::dnn::NMSBoxesBatched(
