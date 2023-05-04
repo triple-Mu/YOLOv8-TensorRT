@@ -24,10 +24,10 @@
 
    🚀 RECOMMENDED `TensorRT` >= 8.4
 
-2. Install python requirement.
+2. Install python requirements.
 
    ``` shell
-   pip install -r requirement.txt
+   pip install -r requirements.txt
    ```
 
 3. Install [`ultralytics`](https://github.com/ultralytics/ultralytics) package for ONNX export or TensorRT API building.
