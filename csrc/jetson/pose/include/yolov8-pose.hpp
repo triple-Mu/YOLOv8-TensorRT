@@ -1,8 +1,8 @@
 //
-// Created by ubuntu on 4/7/23.
+// Created by ubuntu on 1/20/23.
 //
-#ifndef POSE_NORMAL_YOLOv8_pose_HPP
-#define POSE_NORMAL_YOLOv8_pose_HPP
+#ifndef JETSON_POSE_YOLOV8_POSE_HPP
+#define JETSON_POSE_YOLOV8_POSE_HPP
 
 #include "fstream"
 #include "common.hpp"
@@ -138,10 +138,10 @@ void YOLOv8_pose::make_pipe(bool warmup) {
 
     for (auto &bindings: this->input_bindings) {
         void *d_ptr;
-        CHECK(cudaMallocAsync(
+        CHECK(cudaMalloc(
                 &d_ptr,
-                bindings.size * bindings.dsize,
-                this->stream)
+                bindings.size * bindings.dsize
+                )
         );
         this->device_ptrs.push_back(d_ptr);
     }
@@ -149,10 +149,9 @@ void YOLOv8_pose::make_pipe(bool warmup) {
     for (auto &bindings: this->output_bindings) {
         void *d_ptr, *h_ptr;
         size_t size = bindings.size * bindings.dsize;
-        CHECK(cudaMallocAsync(
+        CHECK(cudaMalloc(
                 &d_ptr,
-                size,
-                this->stream)
+                size)
         );
         CHECK(cudaHostAlloc(
                 &h_ptr,
@@ -403,11 +402,11 @@ void YOLOv8_pose::postprocess(
     );
 #else
     cv::dnn::NMSBoxes(
-        bboxes,
-        scores,
-        score_thres,
-        iou_thres,
-        indices
+            bboxes,
+            scores,
+            score_thres,
+            iou_thres,
+            indices
     );
 #endif
 
@@ -513,4 +512,4 @@ void YOLOv8_pose::draw_objects(
     }
 }
 
-#endif //POSE_NORMAL_YOLOv8_pose_HPP
+#endif //JETSON_POSE_YOLOV8_POSE_HPP

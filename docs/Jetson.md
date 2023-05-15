@@ -139,3 +139,70 @@ Usage:
 # infer video
 ./yolov8-seg yolov8s-seg.engine data/test.mp4 # the video path
 ```
+
+
+
+## Normal Posture
+
+### 1. Export Posture Normal ONNX
+
+`yolov8s-pose.pt` is your trained pytorch model, or the official pre-trained model.
+
+Do not use any model other than pytorch model.
+Do not use [`build.py`](../build.py) to export engine if you don't know how to install pytorch and other environments on jetson.
+
+***!!! Please use the PC to execute the following script !!!***
+
+```shell
+# Export yolov8s-pose.pt to yolov8s-pose.onnx
+yolo export model=yolov8s-pose.pt format=onnx simplify=True
+```
+
+***!!! Please use the Jetson to execute the following script !!!***
+
+```shell
+# Using trtexec tools for export engine
+/usr/src/tensorrt/bin/trtexec \
+--onnx=yolov8s-pose.onnx \
+--saveEngine=yolov8s-pose.engine
+```
+
+After executing the above command, you will get an engine named `yolov8s-pose.engine` .
+
+### 2. Inference with c++
+
+It is highly recommended to use C++ inference on Jetson.
+Here is a demo: [`csrc/jetson/pose`](../csrc/jetson/pose) .
+
+#### Build:
+
+Please modify `KPS_COLORS` and `SKELETON` and `LIMB_COLORS` and postprocess parameters in [`main.cpp`](../csrc/jetson/pose/main.cpp) for yourself.
+
+```c++
+int topk = 100;
+float score_thres = 0.25f;
+float iou_thres = 0.65f;
+```
+
+And build:
+
+``` shell
+export root=${PWD}
+cd src/jetson/pose
+mkdir build
+cmake ..
+make
+mv yolov8-pose ${root}
+cd ${root}
+```
+
+Usage:
+
+``` shell
+# infer image
+./yolov8-pose yolov8s-pose.engine data/bus.jpg
+# infer images
+./yolov8-pose yolov8s-pose.engine data
+# infer video
+./yolov8-pose yolov8s-pose.engine data/test.mp4 # the video path
+```
