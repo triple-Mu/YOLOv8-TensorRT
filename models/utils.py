@@ -128,3 +128,26 @@ def seg_postprocess(
     masks = masks.transpose(2, 0, 1)
     masks = np.ascontiguousarray((masks > 0.5)[..., None], dtype=np.float32)
     return bboxes, scores, labels, masks
+
+
+def pose_postprocess(
+        data: Union[Tuple, ndarray],
+        conf_thres: float = 0.25,
+        iou_thres: float = 0.65) \
+        -> Tuple[ndarray, ndarray, ndarray]:
+    if isinstance(data, tuple):
+        assert len(data) == 1
+        data = data[0]
+    outputs = np.transpose(data[0], (1, 0))
+    bboxes, scores, kpts = np.split(outputs, [4, 5], 1)
+    scores, kpts = scores.squeeze(), kpts.squeeze()
+    idx = scores > conf_thres
+    bboxes, scores, kpts = bboxes[idx], scores[idx], kpts[idx]
+    xycenter, wh = np.split(bboxes, [
+        2,
+    ], -1)
+    cvbboxes = np.concatenate([xycenter - 0.5 * wh, wh], -1)
+    idx = cv2.dnn.NMSBoxes(cvbboxes, scores, conf_thres, iou_thres)
+    cvbboxes, scores, kpts = cvbboxes[idx], scores[idx], kpts[idx]
+    cvbboxes[:, 2:] += cvbboxes[:, :2]
+    return cvbboxes, scores, kpts.reshape(idx.shape[0], -1, 3)

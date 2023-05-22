@@ -3,7 +3,7 @@ from typing import List, Tuple, Union
 import torch
 import torch.nn.functional as F
 from torch import Tensor
-from torchvision.ops import batched_nms
+from torchvision.ops import batched_nms, nms
 
 
 def seg_postprocess(
@@ -31,6 +31,26 @@ def seg_postprocess(
                           align_corners=False)[0]
     masks = masks.gt_(0.5)[..., None]
     return bboxes, scores, labels, masks
+
+
+def pose_postprocess(
+        data: Union[Tuple, Tensor],
+        conf_thres: float = 0.25,
+        iou_thres: float = 0.65) \
+        -> Tuple[Tensor, Tensor, Tensor]:
+    if isinstance(data, tuple):
+        assert len(data) == 1
+        data = data[0]
+    outputs = torch.transpose(data[0], 0, 1).contiguous()
+    bboxes, scores, kpts = outputs.split([4, 1, 51], 1)
+    scores, kpts = scores.squeeze(), kpts.squeeze()
+    idx = scores > conf_thres
+    bboxes, scores, kpts = bboxes[idx], scores[idx], kpts[idx]
+    xycenter, wh = bboxes.chunk(2, -1)
+    bboxes = torch.cat([xycenter - 0.5 * wh, xycenter + 0.5 * wh], -1)
+    idx = nms(bboxes, scores, iou_thres)
+    bboxes, scores, kpts = bboxes[idx], scores[idx], kpts[idx]
+    return bboxes, scores, kpts.reshape(idx.shape[0], -1, 3)
 
 
 def det_postprocess(data: Tuple[Tensor, Tensor, Tensor, Tensor]):
