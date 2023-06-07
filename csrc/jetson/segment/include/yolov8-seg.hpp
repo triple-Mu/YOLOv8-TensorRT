@@ -76,7 +76,7 @@ YOLOv8_seg::YOLOv8_seg(const std::string& engine_file_path)
 
 	this->engine = this->runtime->deserializeCudaEngine(trtModelStream, size);
 	assert(this->engine != nullptr);
-
+	delete[] trtModelStream;
 	this->context = this->engine->createExecutionContext();
 
 	assert(this->context != nullptr);
