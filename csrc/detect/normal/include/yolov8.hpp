@@ -404,7 +404,7 @@ void YOLOv8::postprocess(
 		iou_thres,
 		indices
 	);
-#elif
+#else
 	cv::dnn::NMSBoxes(
 		bboxes,
 		scores,
