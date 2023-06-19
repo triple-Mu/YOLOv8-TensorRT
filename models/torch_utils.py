@@ -18,6 +18,8 @@ def seg_postprocess(
     bboxes, scores, labels, maskconf = outputs.split([4, 1, 1, 32], 1)
     scores, labels = scores.squeeze(), labels.squeeze()
     idx = scores > conf_thres
+    if idx.sum() == 0:  # no bounding boxes or seg were created
+        return None, None, None, None
     bboxes, scores, labels, maskconf = \
         bboxes[idx], scores[idx], labels[idx], maskconf[idx]
     idx = batched_nms(bboxes, scores, labels, iou_thres)

@@ -42,6 +42,11 @@ def main(args: argparse.Namespace) -> None:
                                 device=device)
         bboxes, scores, labels, masks = seg_postprocess(
             data, bgr.shape[:2], args.conf_thres, args.iou_thres)
+        if bboxes is None:
+            # if no bounding box or others save original image
+            if not args.show:
+                cv2.imwrite(str(save_image), draw)
+            continue
         masks = masks[:, dh:H - dh, dw:W - dw, :]
         indices = (labels % len(MASK_COLORS)).long()
         mask_colors = torch.asarray(MASK_COLORS, device=device)[indices]
