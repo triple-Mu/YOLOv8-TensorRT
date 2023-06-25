@@ -32,13 +32,12 @@ def main(args: argparse.Namespace) -> None:
         bgr, ratio, dwdh = letterbox(bgr, (W, H))
         dw, dh = int(dwdh[0]), int(dwdh[1])
         rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-        tensor, seg_img = blob(rgb, return_seg=True)
+        tensor = blob(rgb)
         dwdh = np.array(dwdh * 2, dtype=np.float32)
         tensor = np.ascontiguousarray(tensor)
         # inference
         data = Engine(tensor)
 
-        seg_img = seg_img[dh:H - dh, dw:W - dw, [2, 1, 0]]
         bboxes, scores, labels, masks = seg_postprocess(
             data, bgr.shape[:2], args.conf_thres, args.iou_thres)
         masks = masks[:, dh:H - dh, dw:W - dw, :]
@@ -53,11 +52,18 @@ def main(args: argparse.Namespace) -> None:
         bboxes -= dwdh
         bboxes /= ratio
 
-        for (bbox, score, label) in zip(bboxes, scores, labels):
+        for (bbox, score, label, mask) in zip(bboxes, scores, labels, masks):
             bbox = bbox.round().astype(np.int32).tolist()
             cls_id = int(label)
             cls = CLASSES[cls_id]
             color = COLORS[cls]
+            mask = cv2.resize(mask, (w, h))
+            mask = mask[dh: h - dh, dw: w - dw]
+            bgr_mask = np.zeros((mask.shape[0], mask.shape[1], 3), dtype=np.uint8)
+            bgr_mask[mask > 0.5] = MASK_COLORS[label % len(MASK_COLORS)]
+            bgr_mask = cv2.resize(bgr_mask, (draw.shape[1], draw.shape[0]), cv2.INTER_NEAREST)
+            bgr_mask[bgr_mask==0] = draw[bgr_mask==0]
+            draw = cv2.addWeighted(draw, 0.5, bgr_mask, 0.5, 0.0)
             cv2.rectangle(draw, bbox[:2], bbox[2:], color, 2)
             cv2.putText(draw,
                         f'{cls}:{score:.3f}', (bbox[0], bbox[1] - 2),
