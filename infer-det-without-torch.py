@@ -31,7 +31,7 @@ def main(args: argparse.Namespace) -> None:
         draw = bgr.copy()
         bgr, ratio, dwdh = letterbox(bgr, (W, H))
         rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-        tensor = blob(rgb, return_seg=False)
+        tensor = blob(rgb)
         dwdh = np.array(dwdh * 2, dtype=np.float32)
         tensor = np.ascontiguousarray(tensor)
         # inference
