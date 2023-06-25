@@ -12,7 +12,7 @@ SUFFIXS = ('.bmp', '.dng', '.jpeg', '.jpg', '.mpo', '.png', '.tif', '.tiff',
 
 def letterbox(im: ndarray,
               new_shape: Union[Tuple, List] = (640, 640),
-              color: Union[Tuple, List] = (0, 0, 0)) \
+              color: Union[Tuple, List] = (114, 114, 114)) \
         -> Tuple[ndarray, float, Tuple[float, float]]:
     # Resize and pad image while meeting stride-multiple constraints
     shape = im.shape[:2]  # current shape [height, width]
