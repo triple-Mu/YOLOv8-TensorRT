@@ -12,7 +12,7 @@ SUFFIXS = ('.bmp', '.dng', '.jpeg', '.jpg', '.mpo', '.png', '.tif', '.tiff',
 
 def letterbox(im: ndarray,
               new_shape: Union[Tuple, List] = (640, 640),
-              color: Union[Tuple, List] = (114, 114, 114)) \
+              color: Union[Tuple, List] = (0, 0, 0)) \
         -> Tuple[ndarray, float, Tuple[float, float]]:
     # Resize and pad image while meeting stride-multiple constraints
     shape = im.shape[:2]  # current shape [height, width]
@@ -44,16 +44,11 @@ def letterbox(im: ndarray,
     return im, r, (dw, dh)
 
 
-def blob(im: ndarray, return_seg: bool = False) -> Union[ndarray, Tuple]:
-    if return_seg:
-        seg = im.astype(np.float32) / 255
+def blob(im: ndarray) -> Union[ndarray, Tuple]:
     im = im.transpose([2, 0, 1])
     im = im[np.newaxis, ...]
     im = np.ascontiguousarray(im).astype(np.float32) / 255
-    if return_seg:
-        return im, seg
-    else:
-        return im
+    return im
 
 
 def sigmoid(x):
@@ -120,11 +115,8 @@ def seg_postprocess(
         idx = cv2.dnn.NMSBoxes(cvbboxes, scores, conf_thres, iou_thres)
     bboxes, scores, labels, maskconf = \
         bboxes[idx], scores[idx], labels[idx], maskconf[idx]
+    if len(idx) == 0:
+        return bboxes, scores, labels, maskconf
     masks = sigmoid(maskconf @ proto).reshape(-1, h, w)
-    masks = crop_mask(masks, bboxes / 4.)
-    masks = masks.transpose([1, 2, 0])
-    masks = cv2.resize(masks, (shape[1], shape[0]),
-                       interpolation=cv2.INTER_LINEAR)
-    masks = masks.transpose(2, 0, 1)
-    masks = np.ascontiguousarray((masks > 0.5)[..., None], dtype=np.float32)
+    masks = crop_mask(masks, bboxes / 4.).astype(np.float32)
     return bboxes, scores, labels, masks
