@@ -51,7 +51,7 @@ def main(args: argparse.Namespace) -> None:
             mask = cv2.resize(mask, (w, h))
             mask = mask[dh: h - dh, dw: w - dw]
             bgr_mask = np.zeros((mask.shape[0], mask.shape[1], 3), dtype=np.uint8)
-            bgr_mask[mask > 0.5] = MASK_COLORS[label % len(MASK_COLORS)]
+            bgr_mask[mask > 0.5] = (MASK_COLORS[label % len(MASK_COLORS)] * 255).astype(np.uint8)
             bgr_mask = cv2.resize(bgr_mask, (draw.shape[1], draw.shape[0]), cv2.INTER_NEAREST)
             bgr_mask[bgr_mask==0] = draw[bgr_mask==0]
             draw = cv2.addWeighted(draw, 1 - ALPHA, bgr_mask, ALPHA, 0.0)
