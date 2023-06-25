@@ -30,7 +30,7 @@ def main(args: argparse.Namespace) -> None:
         draw = bgr.copy()
         bgr, ratio, dwdh = letterbox(bgr, (W, H))
         rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-        tensor = blob(rgb, return_seg=False)
+        tensor = blob(rgb)
         dwdh = torch.asarray(dwdh * 2, dtype=torch.float32, device=device)
         tensor = torch.asarray(tensor, device=device)
         # inference
