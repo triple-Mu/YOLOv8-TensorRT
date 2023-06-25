@@ -54,7 +54,7 @@ def main(args: argparse.Namespace) -> None:
             bgr_mask[mask > 0.5] = MASK_COLORS[label % len(MASK_COLORS)]
             bgr_mask = cv2.resize(bgr_mask, (draw.shape[1], draw.shape[0]), cv2.INTER_NEAREST)
             bgr_mask[bgr_mask==0] = draw[bgr_mask==0]
-            draw = cv2.addWeighted(draw, 0.5, bgr_mask, 0.5, 0.0)
+            draw = cv2.addWeighted(draw, 1 - ALPHA, bgr_mask, ALPHA, 0.0)
             cv2.rectangle(draw, bbox[:2], bbox[2:], color, 2)
             cv2.putText(draw,
                         f'{cls}:{score:.3f}', (bbox[0], bbox[1] - 2),
