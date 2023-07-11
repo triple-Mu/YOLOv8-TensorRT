@@ -3,6 +3,7 @@
 Only test on `Jetson-NX 4GB`
 
 ENVS:
+
 - Jetpack 4.6.3
 - CUDA-10.2
 - CUDNN-8.2.1
@@ -20,7 +21,8 @@ If you have other environment-related issues, please discuss in issue.
 `yolov8s.pt` is your trained pytorch model, or the official pre-trained model.
 
 Do not use any model other than pytorch model.
-Do not use [`build.py`](../build.py) to export engine if you don't know how to install pytorch and other environments on jetson.
+Do not use [`build.py`](../build.py) to export engine if you don't know how to install pytorch and other environments on
+jetson.
 
 ***!!! Please use the PC to execute the following script !!!***
 
@@ -79,7 +81,8 @@ Usage:
 `yolov8s-seg.pt` is your trained pytorch model, or the official pre-trained model.
 
 Do not use any model other than pytorch model.
-Do not use [`build.py`](../build.py) to export engine if you don't know how to install pytorch and other environments on jetson.
+Do not use [`build.py`](../build.py) to export engine if you don't know how to install pytorch and other environments on
+jetson.
 
 ***!!! Please use the PC to execute the following script !!!***
 
@@ -106,7 +109,8 @@ Here is a demo: [`csrc/jetson/segment`](../csrc/jetson/segment) .
 
 #### Build:
 
-Please modify `CLASS_NAMES` and `COLORS` and postprocess parameters in [`main.cpp`](../csrc/jetson/segment/main.cpp) for yourself.
+Please modify `CLASS_NAMES` and `COLORS` and postprocess parameters in [`main.cpp`](../csrc/jetson/segment/main.cpp) for
+yourself.
 
 ```c++
 int topk = 100;
@@ -140,8 +144,6 @@ Usage:
 ./yolov8-seg yolov8s-seg.engine data/test.mp4 # the video path
 ```
 
-
-
 ## Normal Posture
 
 ### 1. Export Posture Normal ONNX
@@ -149,7 +151,8 @@ Usage:
 `yolov8s-pose.pt` is your trained pytorch model, or the official pre-trained model.
 
 Do not use any model other than pytorch model.
-Do not use [`build.py`](../build.py) to export engine if you don't know how to install pytorch and other environments on jetson.
+Do not use [`build.py`](../build.py) to export engine if you don't know how to install pytorch and other environments on
+jetson.
 
 ***!!! Please use the PC to execute the following script !!!***
 
@@ -176,7 +179,8 @@ Here is a demo: [`csrc/jetson/pose`](../csrc/jetson/pose) .
 
 #### Build:
 
-Please modify `KPS_COLORS` and `SKELETON` and `LIMB_COLORS` and postprocess parameters in [`main.cpp`](../csrc/jetson/pose/main.cpp) for yourself.
+Please modify `KPS_COLORS` and `SKELETON` and `LIMB_COLORS` and postprocess parameters
+in [`main.cpp`](../csrc/jetson/pose/main.cpp) for yourself.
 
 ```c++
 int topk = 100;
