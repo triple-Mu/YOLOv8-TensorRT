@@ -3,7 +3,7 @@ from typing import List, Tuple, Union
 import torch
 import torch.nn.functional as F
 from torch import Tensor
-from torchvision.ops import batched_nms
+from torchvision.ops import batched_nms, nms
 
 
 def seg_postprocess(
@@ -14,12 +14,13 @@ def seg_postprocess(
         -> Tuple[Tensor, Tensor, Tensor, Tensor]:
     assert len(data) == 2
     h, w = shape[0] // 4, shape[1] // 4  # 4x downsampling
-    outputs, proto = (i[0] for i in data)
+    outputs, proto = data[0][0], data[1][0]
     bboxes, scores, labels, maskconf = outputs.split([4, 1, 1, 32], 1)
     scores, labels = scores.squeeze(), labels.squeeze()
     idx = scores > conf_thres
-    if idx.sum() == 0:  # no bounding boxes or seg were created
-        return None, None, None, None
+    if not idx.any():  # no bounding boxes or seg were created
+        return bboxes.new_zeros((0, 4)), scores.new_zeros(
+            (0, )), labels.new_zeros((0, )), bboxes.new_zeros((0, 0, 0, 0))
     bboxes, scores, labels, maskconf = \
         bboxes[idx], scores[idx], labels[idx], maskconf[idx]
     idx = batched_nms(bboxes, scores, labels, iou_thres)
@@ -35,10 +36,37 @@ def seg_postprocess(
     return bboxes, scores, labels, masks
 
 
+def pose_postprocess(
+        data: Union[Tuple, Tensor],
+        conf_thres: float = 0.25,
+        iou_thres: float = 0.65) \
+        -> Tuple[Tensor, Tensor, Tensor]:
+    if isinstance(data, tuple):
+        assert len(data) == 1
+        data = data[0]
+    outputs = torch.transpose(data[0], 0, 1).contiguous()
+    bboxes, scores, kpts = outputs.split([4, 1, 51], 1)
+    scores, kpts = scores.squeeze(), kpts.squeeze()
+    idx = scores > conf_thres
+    if not idx.any():  # no bounding boxes or seg were created
+        return bboxes.new_zeros((0, 4)), scores.new_zeros(
+            (0, )), bboxes.new_zeros((0, 0, 0))
+    bboxes, scores, kpts = bboxes[idx], scores[idx], kpts[idx]
+    xycenter, wh = bboxes.chunk(2, -1)
+    bboxes = torch.cat([xycenter - 0.5 * wh, xycenter + 0.5 * wh], -1)
+    idx = nms(bboxes, scores, iou_thres)
+    bboxes, scores, kpts = bboxes[idx], scores[idx], kpts[idx]
+    return bboxes, scores, kpts.reshape(idx.shape[0], -1, 3)
+
+
 def det_postprocess(data: Tuple[Tensor, Tensor, Tensor, Tensor]):
     assert len(data) == 4
-    num_dets, bboxes, scores, labels = (i[0] for i in data)
+    num_dets, bboxes, scores, labels = data[0][0], data[1][0], data[2][
+        0], data[3][0]
     nums = num_dets.item()
+    if nums == 0:
+        return bboxes.new_zeros((0, 4)), scores.new_zeros(
+            (0, )), labels.new_zeros((0, ))
     bboxes = bboxes[:nums]
     scores = scores[:nums]
     labels = labels[:nums]

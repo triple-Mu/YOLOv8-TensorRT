@@ -41,6 +41,10 @@ def main(args: argparse.Namespace) -> None:
         seg_img = seg_img[dh:H - dh, dw:W - dw, [2, 1, 0]]
         bboxes, scores, labels, masks = seg_postprocess(
             data, bgr.shape[:2], args.conf_thres, args.iou_thres)
+        if bboxes.size == 0:
+            # if no bounding box
+            print(f'{image}: no object!')
+            continue
         masks = masks[:, dh:H - dh, dw:W - dw, :]
         mask_colors = MASK_COLORS[labels % len(MASK_COLORS)]
         mask_colors = mask_colors.reshape(-1, 1, 1, 3) * ALPHA

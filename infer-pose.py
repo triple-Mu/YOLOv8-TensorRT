@@ -3,11 +3,10 @@ import argparse
 from pathlib import Path
 
 import cv2
-import numpy as np
 import torch
 
-from config import ALPHA, CLASSES, COLORS, MASK_COLORS
-from models.torch_utils import seg_postprocess
+from config import COLORS, KPS_COLORS, LIMB_COLORS, SKELETON
+from models.torch_utils import pose_postprocess
 from models.utils import blob, letterbox, path_to_list
 
 
@@ -15,9 +14,6 @@ def main(args: argparse.Namespace) -> None:
     device = torch.device(args.device)
     Engine = TRTModule(args.engine, device)
     H, W = Engine.inp_info[0].shape[-2:]
-
-    # set desired output names order
-    Engine.set_desired(['outputs', 'proto'])
 
     images = path_to_list(args.imgs)
     save_path = Path(args.out_dir)
@@ -32,45 +28,51 @@ def main(args: argparse.Namespace) -> None:
         bgr, ratio, dwdh = letterbox(bgr, (W, H))
         dw, dh = int(dwdh[0]), int(dwdh[1])
         rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-        tensor, seg_img = blob(rgb, return_seg=True)
+        tensor = blob(rgb, return_seg=False)
         dwdh = torch.asarray(dwdh * 2, dtype=torch.float32, device=device)
         tensor = torch.asarray(tensor, device=device)
         # inference
         data = Engine(tensor)
 
-        seg_img = torch.asarray(seg_img[dh:H - dh, dw:W - dw, [2, 1, 0]],
-                                device=device)
-        bboxes, scores, labels, masks = seg_postprocess(
-            data, bgr.shape[:2], args.conf_thres, args.iou_thres)
+        bboxes, scores, kpts = pose_postprocess(data, args.conf_thres,
+                                                args.iou_thres)
         if bboxes.numel() == 0:
             # if no bounding box
             print(f'{image}: no object!')
             continue
-        masks = masks[:, dh:H - dh, dw:W - dw, :]
-        indices = (labels % len(MASK_COLORS)).long()
-        mask_colors = torch.asarray(MASK_COLORS, device=device)[indices]
-        mask_colors = mask_colors.view(-1, 1, 1, 3) * ALPHA
-        mask_colors = masks @ mask_colors
-        inv_alph_masks = (1 - masks * 0.5).cumprod(0)
-        mcs = (mask_colors * inv_alph_masks).sum(0) * 2
-        seg_img = (seg_img * inv_alph_masks[-1] + mcs) * 255
-        draw = cv2.resize(seg_img.cpu().numpy().astype(np.uint8),
-                          draw.shape[:2][::-1])
-
         bboxes -= dwdh
         bboxes /= ratio
 
-        for (bbox, score, label) in zip(bboxes, scores, labels):
+        for (bbox, score, kpt) in zip(bboxes, scores, kpts):
             bbox = bbox.round().int().tolist()
-            cls_id = int(label)
-            cls = CLASSES[cls_id]
-            color = COLORS[cls]
+            color = COLORS['person']
             cv2.rectangle(draw, bbox[:2], bbox[2:], color, 2)
             cv2.putText(draw,
-                        f'{cls}:{score:.3f}', (bbox[0], bbox[1] - 2),
+                        f'person:{score:.3f}', (bbox[0], bbox[1] - 2),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         0.75, [225, 255, 255],
                         thickness=2)
+            for i in range(19):
+                if i < 17:
+                    px, py, ps = kpt[i]
+                    if ps > 0.5:
+                        kcolor = KPS_COLORS[i]
+                        px = round(float(px - dw) / ratio)
+                        py = round(float(py - dh) / ratio)
+                        cv2.circle(draw, (px, py), 5, kcolor, -1)
+                xi, yi = SKELETON[i]
+                pos1_s = kpt[xi - 1][2]
+                pos2_s = kpt[yi - 1][2]
+                if pos1_s > 0.5 and pos2_s > 0.5:
+                    limb_color = LIMB_COLORS[i]
+                    pos1_x = round(float(kpt[xi - 1][0] - dw) / ratio)
+                    pos1_y = round(float(kpt[xi - 1][1] - dh) / ratio)
+
+                    pos2_x = round(float(kpt[yi - 1][0] - dw) / ratio)
+                    pos2_y = round(float(kpt[yi - 1][1] - dh) / ratio)
+
+                    cv2.line(draw, (pos1_x, pos1_y), (pos2_x, pos2_y),
+                             limb_color, 2)
         if args.show:
             cv2.imshow('result', draw)
             cv2.waitKey(0)

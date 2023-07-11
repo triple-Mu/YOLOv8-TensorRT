@@ -1,7 +1,7 @@
 # YOLOv8-seg Model with TensorRT
 
 The yolov8-seg model conversion route is :
-    YOLOv8 PyTorch model -> ONNX -> TensorRT Engine
+YOLOv8 PyTorch model -> ONNX -> TensorRT Engine
 
 ***Notice !!!*** We don't support TensorRT API building !!!
 
@@ -96,7 +96,9 @@ You can infer segment engine with c++ in [`csrc/segment/simple`](../csrc/segment
 
 ### Build:
 
-Please set you own librarys in [`CMakeLists.txt`](../csrc/segment/simple/CMakeLists.txt) and modify you own config in [`main.cpp`](../csrc/segment/simple/main.cpp) such as `CLASS_NAMES`, `COLORS`, `MASK_COLORS` and postprocess parameters .
+Please set you own librarys in [`CMakeLists.txt`](../csrc/segment/simple/CMakeLists.txt) and modify you own config
+in [`main.cpp`](../csrc/segment/simple/main.cpp) such as `CLASS_NAMES`, `COLORS`, `MASK_COLORS` and postprocess
+parameters .
 
 ```c++
 int topk = 100;
@@ -119,7 +121,8 @@ cd ${root}
 
 ***Notice !!!***
 
-If you have build OpenCV(>=4.7.0) by yourself, it provides a new api [`cv::dnn::NMSBoxesBatched`](https://docs.opencv.org/4.x/d6/d0f/group__dnn.html#ga977aae09fbf7c804e003cfea1d4e928c) .
+If you have build OpenCV(>=4.7.0) by yourself, it provides a new
+api [`cv::dnn::NMSBoxesBatched`](https://docs.opencv.org/4.x/d6/d0f/group__dnn.html#ga977aae09fbf7c804e003cfea1d4e928c) .
 It is a gread api about efficient in-class nms . It will be used by default!
 
 ***!!!***
@@ -139,9 +142,47 @@ Usage:
 
 You can leave this repo and use the original `ultralytics` repo for onnx export.
 
-### 1. Python script
+### 1. ONNX -> TensorRT
+
+You can export your onnx model by `ultralytics` API.
+
+``` shell
+yolo export model=yolov8s-seg.pt format=onnx opset=11 simplify=True
+```
+
+or run this python script:
+
+```python
+from ultralytics import YOLO
+
+# Load a model
+model = YOLO("yolov8s-seg.pt")  # load a pretrained model (recommended for training)
+success = model.export(format="onnx", opset=11, simplify=True)  # export the model to onnx format
+assert success
+```
+
+Then build engine by Trtexec Tools.
+
+You can export TensorRT engine by [`trtexec`](https://github.com/NVIDIA/TensorRT/tree/main/samples/trtexec) tools.
 
 Usage:
+
+``` shell
+/usr/src/tensorrt/bin/trtexec \
+--onnx=yolov8s-seg.onnx \
+--saveEngine=yolov8s-seg.engine \
+--fp16
+```
+
+### 2. Direct to TensorRT (NOT RECOMMAND!!)
+
+Usage:
+
+```shell
+yolo export model=yolov8s-seg.pt format=engine device=0
+```
+
+or run python script:
 
 ```python
 from ultralytics import YOLO
@@ -154,25 +195,17 @@ assert success
 
 After executing the above script, you will get an engine named `yolov8s-seg.engine` .
 
-### 2. CLI tools
-
-Usage:
-
-```shell
-yolo export model=yolov8s-seg.pt format=engine device=0
-```
-
-After executing the above command, you will get an engine named `yolov8s-seg.engine` too.
-
 ## Inference with c++
 
 You can infer with c++ in [`csrc/segment/normal`](../csrc/segment/normal) .
 
 ### Build:
 
-Please set you own librarys in [`CMakeLists.txt`](../csrc/segment/normal/CMakeLists.txt) and modify `CLASS_NAMES` and `COLORS` in [`main.cpp`](../csrc/segment/normal/main.cpp).
+Please set you own librarys in [`CMakeLists.txt`](../csrc/segment/normal/CMakeLists.txt) and modify `CLASS_NAMES`
+and `COLORS` in [`main.cpp`](../csrc/segment/normal/main.cpp).
 
-Besides, you can modify the postprocess parameters such as `num_labels` and `score_thres` and `iou_thres` and `topk` in [`main.cpp`](../csrc/segment/normal/main.cpp).
+Besides, you can modify the postprocess parameters such as `num_labels` and `score_thres` and `iou_thres` and `topk`
+in [`main.cpp`](../csrc/segment/normal/main.cpp).
 
 ```c++
 int topk = 100;

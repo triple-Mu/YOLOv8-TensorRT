@@ -37,6 +37,10 @@ def main(args: argparse.Namespace) -> None:
         data = Engine(tensor)
 
         bboxes, scores, labels = det_postprocess(data)
+        if bboxes.numel() == 0:
+            # if no bounding box
+            print(f'{image}: no object!')
+            continue
         bboxes -= dwdh
         bboxes /= ratio
 

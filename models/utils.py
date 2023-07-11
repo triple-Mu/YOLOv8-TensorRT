@@ -45,6 +45,7 @@ def letterbox(im: ndarray,
 
 
 def blob(im: ndarray, return_seg: bool = False) -> Union[ndarray, Tuple]:
+    seg = None
     if return_seg:
         seg = im.astype(np.float32) / 255
     im = im.transpose([2, 0, 1])
@@ -88,6 +89,9 @@ def det_postprocess(data: Tuple[ndarray, ndarray, ndarray, ndarray]):
     assert len(data) == 4
     num_dets, bboxes, scores, labels = (i[0] for i in data)
     nums = num_dets.item()
+    if nums == 0:
+        return np.empty((0, 4), dtype=np.float32), np.empty(
+            (0, ), dtype=np.float32), np.empty((0, ), dtype=np.int32)
     bboxes = bboxes[:nums]
     scores = scores[:nums]
     labels = labels[:nums]
@@ -106,6 +110,12 @@ def seg_postprocess(
     bboxes, scores, labels, maskconf = np.split(outputs, [4, 5, 6], 1)
     scores, labels = scores.squeeze(), labels.squeeze()
     idx = scores > conf_thres
+    if not idx.any():  # no bounding boxes or seg were created
+        return np.empty((0, 4), dtype=np.float32), \
+            np.empty((0,), dtype=np.float32), \
+            np.empty((0,), dtype=np.int32), \
+            np.empty((0, 0, 0, 0), dtype=np.int32)
+
     bboxes, scores, labels, maskconf = \
         bboxes[idx], scores[idx], labels[idx], maskconf[idx]
     cvbboxes = np.concatenate([bboxes[:, :2], bboxes[:, 2:] - bboxes[:, :2]],
@@ -128,3 +138,29 @@ def seg_postprocess(
     masks = masks.transpose(2, 0, 1)
     masks = np.ascontiguousarray((masks > 0.5)[..., None], dtype=np.float32)
     return bboxes, scores, labels, masks
+
+
+def pose_postprocess(
+        data: Union[Tuple, ndarray],
+        conf_thres: float = 0.25,
+        iou_thres: float = 0.65) \
+        -> Tuple[ndarray, ndarray, ndarray]:
+    if isinstance(data, tuple):
+        assert len(data) == 1
+        data = data[0]
+    outputs = np.transpose(data[0], (1, 0))
+    bboxes, scores, kpts = np.split(outputs, [4, 5], 1)
+    scores, kpts = scores.squeeze(), kpts.squeeze()
+    idx = scores > conf_thres
+    if not idx.any():  # no bounding boxes or seg were created
+        return np.empty((0, 4), dtype=np.float32), np.empty(
+            (0, ), dtype=np.float32), np.empty((0, 0, 0), dtype=np.float32)
+    bboxes, scores, kpts = bboxes[idx], scores[idx], kpts[idx]
+    xycenter, wh = np.split(bboxes, [
+        2,
+    ], -1)
+    cvbboxes = np.concatenate([xycenter - 0.5 * wh, wh], -1)
+    idx = cv2.dnn.NMSBoxes(cvbboxes, scores, conf_thres, iou_thres)
+    cvbboxes, scores, kpts = cvbboxes[idx], scores[idx], kpts[idx]
+    cvbboxes[:, 2:] += cvbboxes[:, :2]
+    return cvbboxes, scores, kpts.reshape(idx.shape[0], -1, 3)
