@@ -88,7 +88,6 @@ python3 infer-seg.py \
 - `--show` : Whether to show detection results.
 - `--out-dir` : Where to save detection results images. It will not work when use `--show` flag.
 - `--device` : The CUDA deivce you use.
-- `--profile` : Profile the TensorRT engine.
 
 ## Infer with C++
 
@@ -262,4 +261,3 @@ python3 infer-seg-without-torch.py \
 - `--show` : Whether to show detection results.
 - `--out-dir` : Where to save detection results images. It will not work when use `--show` flag.
 - `--method` : Choose `cudart` or `pycuda`, default is `cudart`.
-- `--profile` : Profile the TensorRT engine.
