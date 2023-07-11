@@ -86,7 +86,6 @@ python3 infer-pose.py \
 - `--show` : Whether to show detection results.
 - `--out-dir` : Where to save detection results images. It will not work when use `--show` flag.
 - `--device` : The CUDA deivce you use.
-- `--profile` : Profile the TensorRT engine.
 
 ## Inference with c++
 
