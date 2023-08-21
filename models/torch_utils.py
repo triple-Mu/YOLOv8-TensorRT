@@ -61,6 +61,7 @@ def pose_postprocess(
 
 def det_postprocess(data: Tuple[Tensor, Tensor, Tensor, Tensor]):
     assert len(data) == 4
+    iou_thres: float = 0.65
     num_dets, bboxes, scores, labels = data[0][0], data[1][0], data[2][
         0], data[3][0]
     nums = num_dets.item()
@@ -70,6 +71,8 @@ def det_postprocess(data: Tuple[Tensor, Tensor, Tensor, Tensor]):
     bboxes = bboxes[:nums]
     scores = scores[:nums]
     labels = labels[:nums]
+    idx = nms(bboxes, scores, iou_thres)
+    bboxes, scores, labels = bboxes[idx], scores[idx], labels[idx]
     return bboxes, scores, labels
 
 
