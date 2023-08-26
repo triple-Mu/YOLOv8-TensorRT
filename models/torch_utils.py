@@ -70,13 +70,13 @@ def det_postprocess(data: Tuple[Tensor, Tensor, Tensor, Tensor]):
     if nums == 0:
         return bboxes.new_zeros((0, 4)), scores.new_zeros(
             (0, )), labels.new_zeros((0, ))
+    # add nms
+    idx = nms(bboxes, scores, iou_thres)
+    bboxes, scores, labels = bboxes[idx], scores[idx], labels[idx]
     bboxes = bboxes[:nums]
     scores = scores[:nums]
     labels = labels[:nums]
 
-    # add nms
-    idx = nms(bboxes, scores, iou_thres)
-    bboxes, scores, labels = bboxes[idx], scores[idx], labels[idx]
     return bboxes, scores, labels
 
 
