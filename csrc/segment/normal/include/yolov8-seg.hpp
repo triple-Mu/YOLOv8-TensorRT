@@ -326,7 +326,7 @@ void YOLOv8_seg::postprocess(
     }
     else {
         cv::Mat matmulRes = (masks * protos).t();
-        cv::Mat maskMat   = matmulRes.reshape(indices.size(), {seg_w, seg_h});
+        cv::Mat maskMat   = matmulRes.reshape(indices.size(), {seg_h, seg_w});
 
         std::vector<cv::Mat> maskChannels;
         cv::split(maskMat, maskChannels);
