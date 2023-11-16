@@ -4,7 +4,6 @@ from typing import List, Tuple, Union
 import cv2
 import numpy as np
 from numpy import ndarray
-from torchvision.ops import nms
 
 # image suffixs
 SUFFIXS = ('.bmp', '.dng', '.jpeg', '.jpg', '.mpo', '.png', '.tif', '.tiff',
@@ -58,8 +57,120 @@ def blob(im: ndarray, return_seg: bool = False) -> Union[ndarray, Tuple]:
         return im
 
 
-def sigmoid(x):
+def sigmoid(x: ndarray) -> ndarray:
     return 1. / (1. + np.exp(-x))
+
+
+def bbox_iou(boxes1: ndarray, boxes2: ndarray) -> ndarray:
+    boxes1_area = (boxes1[..., 2] - boxes1[..., 0]) * \
+                  (boxes1[..., 3] - boxes1[..., 1])
+    boxes2_area = (boxes2[..., 2] - boxes2[..., 0]) * \
+                  (boxes2[..., 3] - boxes2[..., 1])
+    left_up = np.maximum(boxes1[..., :2], boxes2[..., :2])
+    right_down = np.minimum(boxes1[..., 2:], boxes2[..., 2:])
+    inter_section = np.maximum(right_down - left_up, 0.0)
+    inter_area = inter_section[..., 0] * inter_section[..., 1]
+    union_area = boxes1_area + boxes2_area - inter_area
+    ious = np.maximum(1.0 * inter_area / union_area, np.finfo(np.float32).eps)
+
+    return ious
+
+
+def batched_nms(boxes: ndarray,
+                scores: ndarray,
+                iou_thres: float = 0.65,
+                conf_thres: float = 0.25):
+    labels = np.argmax(scores, axis=-1)
+    scores = np.max(scores, axis=-1)
+
+    cand = scores > conf_thres
+    boxes = boxes[cand]
+    scores = scores[cand]
+    labels = labels[cand]
+
+    keep_boxes = []
+    keep_scores = []
+    keep_labels = []
+
+    for cls in np.unique(labels):
+        cls_mask = labels == cls
+        cls_boxes = boxes[cls_mask]
+        cls_scores = scores[cls_mask]
+
+        while cls_boxes.shape[0] > 0:
+            max_idx = np.argmax(cls_scores)
+            max_box = cls_boxes[max_idx:max_idx + 1]
+            max_score = cls_scores[max_idx:max_idx + 1]
+            max_label = np.array([cls], dtype=np.int32)
+            keep_boxes.append(max_box)
+            keep_scores.append(max_score)
+            keep_labels.append(max_label)
+            other_boxes = np.delete(cls_boxes, max_idx, axis=0)
+            other_scores = np.delete(cls_scores, max_idx, axis=0)
+            ious = bbox_iou(max_box, other_boxes)
+            iou_mask = ious < iou_thres
+            if not iou_mask.any():
+                break
+            cls_boxes = other_boxes[iou_mask]
+            cls_scores = other_scores[iou_mask]
+
+    if len(keep_boxes) == 0:
+        keep_boxes = np.empty((0, 4), dtype=np.float32)
+        keep_scores = np.empty((0, ), dtype=np.float32)
+        keep_labels = np.empty((0, ), dtype=np.float32)
+
+    else:
+        keep_boxes = np.concatenate(keep_boxes, axis=0)
+        keep_scores = np.concatenate(keep_scores, axis=0)
+        keep_labels = np.concatenate(keep_labels, axis=0)
+
+    return keep_boxes, keep_scores, keep_labels
+
+
+def nms(boxes: ndarray,
+        scores: ndarray,
+        iou_thres: float = 0.65,
+        conf_thres: float = 0.25):
+    labels = np.argmax(scores, axis=-1)
+    scores = np.max(scores, axis=-1)
+
+    cand = scores > conf_thres
+    boxes = boxes[cand]
+    scores = scores[cand]
+    labels = labels[cand]
+
+    keep_boxes = []
+    keep_scores = []
+    keep_labels = []
+
+    idxs = scores.argsort()
+    while idxs.size > 0:
+        max_score_index = idxs[-1]
+        max_box = boxes[max_score_index:max_score_index + 1]
+        max_score = scores[max_score_index:max_score_index + 1]
+        max_label = np.array([labels[max_score_index]], dtype=np.int32)
+        keep_boxes.append(max_box)
+        keep_scores.append(max_score)
+        keep_labels.append(max_label)
+        if idxs.size == 1:
+            break
+        idxs = idxs[:-1]
+        other_boxes = boxes[idxs]
+        ious = bbox_iou(max_box, other_boxes)
+        iou_mask = ious < iou_thres
+        idxs = idxs[iou_mask]
+
+    if len(keep_boxes) == 0:
+        keep_boxes = np.empty((0, 4), dtype=np.float32)
+        keep_scores = np.empty((0, ), dtype=np.float32)
+        keep_labels = np.empty((0, ), dtype=np.float32)
+
+    else:
+        keep_boxes = np.concatenate(keep_boxes, axis=0)
+        keep_scores = np.concatenate(keep_scores, axis=0)
+        keep_labels = np.concatenate(keep_labels, axis=0)
+
+    return keep_boxes, keep_scores, keep_labels
 
 
 def path_to_list(images_path: Union[str, Path]) -> List:
