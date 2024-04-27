@@ -212,6 +212,10 @@ Please see more information in [`Segment.md`](docs/Segment.md)
 
 Please see more information in [`Pose.md`](docs/Pose.md)
 
+# TensorRT Cls Deploy
+
+Please see more information in [`Cls.md`](docs/Cls.md)
+
 # DeepStream Detection Deploy
 
 See more in [`README.md`](csrc/deepstream/README.md)

@@ -70,9 +70,6 @@ def det_postprocess(data: Tuple[Tensor, Tensor, Tensor, Tensor]):
             (0, )), labels.new_zeros((0, ))
     # check score negative
     scores[scores < 0] = 1 + scores[scores < 0]
-    # add nms
-    idx = nms(bboxes, scores, iou_thres)
-    bboxes, scores, labels = bboxes[idx], scores[idx], labels[idx]
     bboxes = bboxes[:nums]
     scores = scores[:nums]
     labels = labels[:nums]
