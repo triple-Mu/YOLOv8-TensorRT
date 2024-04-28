@@ -93,17 +93,7 @@ You can infer with c++ in [`csrc/cls/normal`](../csrc/cls/normal) .
 
 ### Build:
 
-Please set you own librarys in [`CMakeLists.txt`](../csrc/cls/normal/CMakeLists.txt) and modify `KPS_COLORS`
-and `SKELETON` and  `LIMB_COLORS`  in [`main.cpp`](../csrc/cls/normal/main.cpp).
-
-Besides, you can modify the postprocess parameters such as `score_thres` and `iou_thres` and `topk`
-in [`main.cpp`](../csrc/cls/normal/main.cpp).
-
-```c++
-int topk = 100;
-float score_thres = 0.25f;
-float iou_thres = 0.65f;
-```
+Please set you own librarys in [`CMakeLists.txt`](../csrc/cls/normal/CMakeLists.txt) and modify `CLASS_NAMES`  in [`main.cpp`](../csrc/cls/normal/main.cpp).
 
 And build:
 
