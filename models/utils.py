@@ -61,118 +61,6 @@ def sigmoid(x: ndarray) -> ndarray:
     return 1. / (1. + np.exp(-x))
 
 
-def bbox_iou(boxes1: ndarray, boxes2: ndarray) -> ndarray:
-    boxes1_area = (boxes1[..., 2] - boxes1[..., 0]) * \
-                  (boxes1[..., 3] - boxes1[..., 1])
-    boxes2_area = (boxes2[..., 2] - boxes2[..., 0]) * \
-                  (boxes2[..., 3] - boxes2[..., 1])
-    left_up = np.maximum(boxes1[..., :2], boxes2[..., :2])
-    right_down = np.minimum(boxes1[..., 2:], boxes2[..., 2:])
-    inter_section = np.maximum(right_down - left_up, 0.0)
-    inter_area = inter_section[..., 0] * inter_section[..., 1]
-    union_area = boxes1_area + boxes2_area - inter_area
-    ious = np.maximum(1.0 * inter_area / union_area, np.finfo(np.float32).eps)
-
-    return ious
-
-
-def batched_nms(boxes: ndarray,
-                scores: ndarray,
-                iou_thres: float = 0.65,
-                conf_thres: float = 0.25):
-    labels = np.argmax(scores, axis=-1)
-    scores = np.max(scores, axis=-1)
-
-    cand = scores > conf_thres
-    boxes = boxes[cand]
-    scores = scores[cand]
-    labels = labels[cand]
-
-    keep_boxes = []
-    keep_scores = []
-    keep_labels = []
-
-    for cls in np.unique(labels):
-        cls_mask = labels == cls
-        cls_boxes = boxes[cls_mask]
-        cls_scores = scores[cls_mask]
-
-        while cls_boxes.shape[0] > 0:
-            max_idx = np.argmax(cls_scores)
-            max_box = cls_boxes[max_idx:max_idx + 1]
-            max_score = cls_scores[max_idx:max_idx + 1]
-            max_label = np.array([cls], dtype=np.int32)
-            keep_boxes.append(max_box)
-            keep_scores.append(max_score)
-            keep_labels.append(max_label)
-            other_boxes = np.delete(cls_boxes, max_idx, axis=0)
-            other_scores = np.delete(cls_scores, max_idx, axis=0)
-            ious = bbox_iou(max_box, other_boxes)
-            iou_mask = ious < iou_thres
-            if not iou_mask.any():
-                break
-            cls_boxes = other_boxes[iou_mask]
-            cls_scores = other_scores[iou_mask]
-
-    if len(keep_boxes) == 0:
-        keep_boxes = np.empty((0, 4), dtype=np.float32)
-        keep_scores = np.empty((0, ), dtype=np.float32)
-        keep_labels = np.empty((0, ), dtype=np.float32)
-
-    else:
-        keep_boxes = np.concatenate(keep_boxes, axis=0)
-        keep_scores = np.concatenate(keep_scores, axis=0)
-        keep_labels = np.concatenate(keep_labels, axis=0)
-
-    return keep_boxes, keep_scores, keep_labels
-
-
-def nms(boxes: ndarray,
-        scores: ndarray,
-        iou_thres: float = 0.65,
-        conf_thres: float = 0.25):
-    labels = np.argmax(scores, axis=-1)
-    scores = np.max(scores, axis=-1)
-
-    cand = scores > conf_thres
-    boxes = boxes[cand]
-    scores = scores[cand]
-    labels = labels[cand]
-
-    keep_boxes = []
-    keep_scores = []
-    keep_labels = []
-
-    idxs = scores.argsort()
-    while idxs.size > 0:
-        max_score_index = idxs[-1]
-        max_box = boxes[max_score_index:max_score_index + 1]
-        max_score = scores[max_score_index:max_score_index + 1]
-        max_label = np.array([labels[max_score_index]], dtype=np.int32)
-        keep_boxes.append(max_box)
-        keep_scores.append(max_score)
-        keep_labels.append(max_label)
-        if idxs.size == 1:
-            break
-        idxs = idxs[:-1]
-        other_boxes = boxes[idxs]
-        ious = bbox_iou(max_box, other_boxes)
-        iou_mask = ious < iou_thres
-        idxs = idxs[iou_mask]
-
-    if len(keep_boxes) == 0:
-        keep_boxes = np.empty((0, 4), dtype=np.float32)
-        keep_scores = np.empty((0, ), dtype=np.float32)
-        keep_labels = np.empty((0, ), dtype=np.float32)
-
-    else:
-        keep_boxes = np.concatenate(keep_boxes, axis=0)
-        keep_scores = np.concatenate(keep_scores, axis=0)
-        keep_labels = np.concatenate(keep_labels, axis=0)
-
-    return keep_boxes, keep_scores, keep_labels
-
-
 def path_to_list(images_path: Union[str, Path]) -> List:
     if isinstance(images_path, str):
         images_path = Path(images_path)
@@ -197,13 +85,57 @@ def crop_mask(masks: ndarray, bboxes: ndarray) -> ndarray:
     return masks * ((r >= x1) * (r < x2) * (c >= y1) * (c < y2))
 
 
+def box_iou(box1: ndarray, box2: ndarray) -> float:
+    x11, y11, x21, y21 = box1
+    x12, y12, x22, y22 = box2
+    x1 = max(x11, x12)
+    y1 = max(y11, y12)
+    x2 = min(x21, x22)
+    y2 = min(y21, y22)
+    inter_area = max(0, x2 - x1) * max(0, y2 - y1)
+    union_area = (x21 - x11) * (y21 - y11) + (x22 - x12) * (y22 - y12) - inter_area
+    return max(0, inter_area / union_area)
+
+
+def NMSBoxes(
+        boxes: ndarray,
+        scores: ndarray,
+        labels: ndarray,
+        iou_thres: float,
+        agnostic: bool = False
+):
+    num_boxes = boxes.shape[0]
+    order = np.argsort(scores)[::-1]
+    boxes = boxes[order]
+    labels = labels[order]
+
+    indices = []
+
+    for i in range(num_boxes):
+        box_a = boxes[i]
+        label_a = labels[i]
+        keep = True
+        for j in indices:
+            box_b = boxes[j]
+            label_b = labels[j]
+            if not agnostic and label_a != label_b:
+                continue
+            if box_iou(box_a, box_b) > iou_thres:
+                keep = False
+        if keep:
+            indices.append(i)
+
+    indices = np.array(indices, dtype=np.int32)
+    return order[indices]
+
+
 def det_postprocess(data: Tuple[ndarray, ndarray, ndarray, ndarray]):
     assert len(data) == 4
     num_dets, bboxes, scores, labels = (i[0] for i in data)
     nums = num_dets.item()
     if nums == 0:
         return np.empty((0, 4), dtype=np.float32), np.empty(
-            (0, ), dtype=np.float32), np.empty((0, ), dtype=np.int32)
+            (0,), dtype=np.float32), np.empty((0,), dtype=np.int32)
     # check score negative
     scores[scores < 0] = 1 + scores[scores < 0]
     bboxes = bboxes[:nums]
@@ -268,7 +200,7 @@ def pose_postprocess(
     idx = scores > conf_thres
     if not idx.any():  # no bounding boxes or seg were created
         return np.empty((0, 4), dtype=np.float32), np.empty(
-            (0, ), dtype=np.float32), np.empty((0, 0, 0), dtype=np.float32)
+            (0,), dtype=np.float32), np.empty((0, 0, 0), dtype=np.float32)
     bboxes, scores, kpts = bboxes[idx], scores[idx], kpts[idx]
     xycenter, wh = np.split(bboxes, [
         2,
