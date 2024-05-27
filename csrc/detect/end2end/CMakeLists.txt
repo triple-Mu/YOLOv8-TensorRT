@@ -15,6 +15,7 @@ find_package(CUDA REQUIRED)
 message(STATUS "CUDA Libs: \n${CUDA_LIBRARIES}\n")
 get_filename_component(CUDA_LIB_DIR ${CUDA_LIBRARIES} DIRECTORY)
 message(STATUS "CUDA Headers: \n${CUDA_INCLUDE_DIRS}\n")
+message(STATUS "CUDA Lib Dir: \n${CUDA_LIB_DIR}\n")
 
 # OpenCV
 find_package(OpenCV REQUIRED)
@@ -24,13 +25,15 @@ message(STATUS "OpenCV Headers: \n${OpenCV_INCLUDE_DIRS}\n")
 
 # TensorRT
 set(TensorRT_INCLUDE_DIRS /usr/include/x86_64-linux-gnu)
-set(TensorRT_LIBRARIES /usr/lib/x86_64-linux-gnu)
+set(TensorRT_LIBRARIES nvinfer nvinfer_plugin)
+set(TensorRT_LIB_DIR /usr/lib/x86_64-linux-gnu)
 
 
 message(STATUS "TensorRT Libs: \n${TensorRT_LIBRARIES}\n")
+message(STATUS "TensorRT Lib Dir: \n${TensorRT_LIB_DIR}\n")
 message(STATUS "TensorRT Headers: \n${TensorRT_INCLUDE_DIRS}\n")
 
-list(APPEND INCLUDE_DIRS
+list(APPEND ALL_INCLUDE_DIRS
         ${CUDA_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
         ${TensorRT_INCLUDE_DIRS}
@@ -39,12 +42,14 @@ list(APPEND INCLUDE_DIRS
 
 list(APPEND ALL_LIBS
         ${CUDA_LIBRARIES}
-        ${CUDA_LIB_DIR}
         ${OpenCV_LIBRARIES}
         ${TensorRT_LIBRARIES}
         )
 
-include_directories(${INCLUDE_DIRS})
+list(APPEND ALL_LIB_DIRS
+        ${CUDA_LIB_DIR}
+        ${TensorRT_LIB_DIR}
+)
 
 add_executable(${PROJECT_NAME}
         main.cpp
@@ -52,5 +57,6 @@ add_executable(${PROJECT_NAME}
         include/common.hpp
         )
 
-target_link_directories(${PROJECT_NAME} PUBLIC ${ALL_LIBS})
-target_link_libraries(${PROJECT_NAME} PRIVATE nvinfer nvinfer_plugin cudart ${OpenCV_LIBS})
+target_include_directories(${PROJECT_NAME} PUBLIC ${ALL_INCLUDE_DIRS})
+target_link_directories(${PROJECT_NAME} PUBLIC ${ALL_LIB_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE nvinfer ${ALL_LIBS}})
