@@ -25,7 +25,7 @@ message(STATUS "OpenCV Headers: \n${OpenCV_INCLUDE_DIRS}\n")
 
 # TensorRT
 set(TensorRT_INCLUDE_DIRS /usr/include/x86_64-linux-gnu)
-set(TensorRT_LIBRARIES nvinfer nvinfer_plugin)
+list(APPEND TensorRT_LIBRARIES nvinfer nvinfer_plugin)
 set(TensorRT_LIB_DIR /usr/lib/x86_64-linux-gnu)
 
 
@@ -38,25 +38,25 @@ list(APPEND ALL_INCLUDE_DIRS
         ${OpenCV_INCLUDE_DIRS}
         ${TensorRT_INCLUDE_DIRS}
         include
-        )
+)
 
 list(APPEND ALL_LIBS
         ${CUDA_LIBRARIES}
         ${OpenCV_LIBRARIES}
         ${TensorRT_LIBRARIES}
-        )
-
+)
+message(STATUS "ALL_LIBS: \n${ALL_LIBS}\n")
 list(APPEND ALL_LIB_DIRS
         ${CUDA_LIB_DIR}
         ${TensorRT_LIB_DIR}
 )
-
+message(STATUS "ALL_LIB_DIRS: \n${ALL_LIB_DIRS}\n")
 add_executable(${PROJECT_NAME}
         main.cpp
         include/yolov8.hpp
         include/common.hpp
-        )
+)
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${ALL_INCLUDE_DIRS})
 target_link_directories(${PROJECT_NAME} PUBLIC ${ALL_LIB_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE nvinfer ${ALL_LIBS}})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${ALL_LIBS})
