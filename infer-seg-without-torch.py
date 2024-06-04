@@ -4,7 +4,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from config import ALPHA, CLASSES, COLORS, MASK_COLORS
+from config import ALPHA, CLASSES_SEG, COLORS, MASK_COLORS
 from models.utils import blob, letterbox, path_to_list, seg_postprocess
 
 
@@ -60,7 +60,7 @@ def main(args: argparse.Namespace) -> None:
         for (bbox, score, label) in zip(bboxes, scores, labels):
             bbox = bbox.round().astype(np.int32).tolist()
             cls_id = int(label)
-            cls = CLASSES[cls_id]
+            cls = CLASSES_SEG[cls_id]
             color = COLORS[cls]
             cv2.rectangle(draw, bbox[:2], bbox[2:], color, 2)
             cv2.putText(draw,
