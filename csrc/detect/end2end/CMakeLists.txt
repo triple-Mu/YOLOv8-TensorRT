@@ -32,6 +32,7 @@ print_var(TensorRT_LIBRARIES)
 print_var(TensorRT_INCLUDE_DIRS)
 print_var(TensorRT_LIB_DIR)
 if (TensorRT_VERSION_MAJOR GREATER_EQUAL 10)
+    message(STATUS "Build with -DTRT_10")
     add_definitions(-DTRT_10)
 endif ()
 

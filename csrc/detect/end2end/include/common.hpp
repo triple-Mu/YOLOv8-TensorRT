@@ -7,8 +7,6 @@
 #include "NvInfer.h"
 #include "filesystem.hpp"
 #include "opencv2/opencv.hpp"
-#include <sys/stat.h>
-#include <unistd.h>
 
 #define CHECK(call)                                                                                                    \
     do {                                                                                                               \
