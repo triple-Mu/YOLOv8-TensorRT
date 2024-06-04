@@ -64,28 +64,51 @@ YOLOv8::YOLOv8(const std::string& engine_file_path)
 
     assert(this->context != nullptr);
     cudaStreamCreate(&this->stream);
-    this->num_bindings = this->engine->getNbBindings();
+
+#ifdef TRT_10
+    this->num_bindings = this->engine->getNbIOTensors();
+#else
+    this->num_bindings = this->num_bindings = this->engine->getNbBindings();
+#endif
 
     for (int i = 0; i < this->num_bindings; ++i) {
-        Binding            binding;
-        nvinfer1::Dims     dims;
+        Binding        binding;
+        nvinfer1::Dims dims;
+#ifdef TRT_10
+        std::string        name  = this->engine->getIOTensorName(i);
+        nvinfer1::DataType dtype = this->engine->getTensorDataType(name.c_str());
+#else
         nvinfer1::DataType dtype = this->engine->getBindingDataType(i);
         std::string        name  = this->engine->getBindingName(i);
-        binding.name             = name;
-        binding.dsize            = type_to_size(dtype);
-
+#endif
+        binding.name  = name;
+        binding.dsize = type_to_size(dtype);
+#ifdef TRT_10
+        bool IsInput = engine->getTensorIOMode(name.c_str()) == nvinfer1::TensorIOMode::kINPUT;
+#else
         bool IsInput = engine->bindingIsInput(i);
+#endif
         if (IsInput) {
             this->num_inputs += 1;
-            dims         = this->engine->getProfileDimensions(i, 0, nvinfer1::OptProfileSelector::kMAX);
+#ifdef TRT_10
+            dims = this->engine->getProfileShape(name.c_str(), 0, nvinfer1::OptProfileSelector::kMAX);
+            // set max opt shape
+            this->context->setInputShape(name.c_str(), dims);
+#else
+            dims = this->engine->getProfileDimensions(i, 0, nvinfer1::OptProfileSelector::kMAX);
+            // set max opt shape
+            this->context->setBindingDimensions(i, dims);
+#endif
             binding.size = get_size_by_dims(dims);
             binding.dims = dims;
             this->input_bindings.push_back(binding);
-            // set max opt shape
-            this->context->setBindingDimensions(i, dims);
         }
         else {
-            dims         = this->context->getBindingDimensions(i);
+#ifdef TRT_10
+            dims = this->context->getTensorShape(name.c_str());
+#else
+            dims = this->context->getBindingDimensions(i);
+#endif
             binding.size = get_size_by_dims(dims);
             binding.dims = dims;
             this->output_bindings.push_back(binding);
@@ -96,9 +119,15 @@ YOLOv8::YOLOv8(const std::string& engine_file_path)
 
 YOLOv8::~YOLOv8()
 {
+#ifdef TRT_10
+    delete this->context;
+    delete this->engine;
+    delete this->runtime;
+#else
     this->context->destroy();
     this->engine->destroy();
     this->runtime->destroy();
+#endif
     cudaStreamDestroy(this->stream);
     for (auto& ptr : this->device_ptrs) {
         CHECK(cudaFree(ptr));
@@ -115,15 +144,27 @@ void YOLOv8::make_pipe(bool warmup)
         void* d_ptr;
         CHECK(cudaMallocAsync(&d_ptr, bindings.size * bindings.dsize, this->stream));
         this->device_ptrs.push_back(d_ptr);
+
+#ifdef TRT_10
+        auto name = bindings.name.c_str();
+        this->context->setInputShape(name, bindings.dims);
+        this->context->setTensorAddress(name, d_ptr);
+#endif
     }
 
     for (auto& bindings : this->output_bindings) {
-        void * d_ptr, *h_ptr;
+        void *d_ptr, *h_ptr;
+
         size_t size = bindings.size * bindings.dsize;
         CHECK(cudaMallocAsync(&d_ptr, size, this->stream));
         CHECK(cudaHostAlloc(&h_ptr, size, 0));
         this->device_ptrs.push_back(d_ptr);
         this->host_ptrs.push_back(h_ptr);
+
+#ifdef TRT_10
+        auto name = bindings.name.c_str();
+        this->context->setTensorAddress(name, d_ptr);
+#endif
     }
 
     if (warmup) {
@@ -202,25 +243,42 @@ void YOLOv8::copy_from_Mat(const cv::Mat& image)
     cv::Size size{width, height};
     this->letterbox(image, nchw, size);
 
-    this->context->setBindingDimensions(0, nvinfer1::Dims{4, {1, 3, height, width}});
-
     CHECK(cudaMemcpyAsync(
         this->device_ptrs[0], nchw.ptr<float>(), nchw.total() * nchw.elemSize(), cudaMemcpyHostToDevice, this->stream));
+
+#ifdef TRT_10
+    auto name = this->input_bindings[0].name.c_str();
+    this->context->setInputShape(name, nvinfer1::Dims{4, {1, 3, size.height, size.width}});
+    this->context->setTensorAddress(name, this->device_ptrs[0]);
+#else
+    this->context->setBindingDimensions(0, nvinfer1::Dims{4, {1, 3, height, width}});
+#endif
 }
 
 void YOLOv8::copy_from_Mat(const cv::Mat& image, cv::Size& size)
 {
     cv::Mat nchw;
     this->letterbox(image, nchw, size);
-    this->context->setBindingDimensions(0, nvinfer1::Dims{4, {1, 3, size.height, size.width}});
+
     CHECK(cudaMemcpyAsync(
         this->device_ptrs[0], nchw.ptr<float>(), nchw.total() * nchw.elemSize(), cudaMemcpyHostToDevice, this->stream));
+
+#ifdef TRT_10
+    auto name = this->input_bindings[0].name.c_str();
+    this->context->setInputShape(name, nvinfer1::Dims{4, {1, 3, size.height, size.width}});
+    this->context->setTensorAddress(name, this->device_ptrs[0]);
+#else
+    this->context->setBindingDimensions(0, nvinfer1::Dims{4, {1, 3, size.height, size.width}});
+#endif
 }
 
 void YOLOv8::infer()
 {
-
+#ifdef TRT_10
+    this->context->enqueueV3(this->stream);
+#else
     this->context->enqueueV2(this->device_ptrs.data(), this->stream, nullptr);
+#endif
     for (int i = 0; i < this->num_outputs; i++) {
         size_t osize = this->output_bindings[i].size * this->output_bindings[i].dsize;
         CHECK(cudaMemcpyAsync(
