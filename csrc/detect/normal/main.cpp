@@ -1,9 +1,11 @@
 //
 // Created by ubuntu on 1/20/23.
 //
-#include "chrono"
 #include "opencv2/opencv.hpp"
 #include "yolov8.hpp"
+#include <chrono>
+
+namespace fs = ghc::filesystem;
 
 const std::vector<std::string> CLASS_NAMES = {
     "person",         "bicycle",    "car",           "motorcycle",    "airplane",     "bus",           "train",
@@ -37,27 +39,30 @@ const std::vector<std::vector<unsigned int>> COLORS = {
 
 int main(int argc, char** argv)
 {
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s [engine_path] [image_path/image_dir/video_path]\n", argv[0]);
+        return -1;
+    }
+
     // cuda:0
     cudaSetDevice(0);
 
     const std::string engine_file_path{argv[1]};
-    const std::string path{argv[2]};
+    const fs::path    path{argv[2]};
 
     std::vector<std::string> imagePathList;
     bool                     isVideo{false};
 
-    assert(argc == 3);
-
     auto yolov8 = new YOLOv8(engine_file_path);
     yolov8->make_pipe(true);
 
-    if (IsFile(path)) {
-        std::string suffix = path.substr(path.find_last_of('.') + 1);
-        if (suffix == "jpg" || suffix == "jpeg" || suffix == "png") {
+    if (fs::exists(path)) {
+        std::string suffix = path.extension();
+        if (suffix == ".jpg" || suffix == ".jpeg" || suffix == ".png") {
             imagePathList.push_back(path);
         }
-        else if (suffix == "mp4" || suffix == "avi" || suffix == "m4v" || suffix == "mpeg" || suffix == "mov"
-                 || suffix == "mkv") {
+        else if (suffix == ".mp4" || suffix == ".avi" || suffix == ".m4v" || suffix == ".mpeg" || suffix == ".mov"
+                 || suffix == ".mkv") {
             isVideo = true;
         }
         else {
@@ -65,17 +70,12 @@ int main(int argc, char** argv)
             std::abort();
         }
     }
-    else if (IsFolder(path)) {
-        cv::glob(path + "/*.jpg", imagePathList);
+    else if (fs::is_directory(path)) {
+        cv::glob(path.string() + "/*.jpg", imagePathList);
     }
 
-    cv::Mat  res, image;
-    cv::Size size        = cv::Size{640, 640};
-    int      num_labels  = 80;
-    int      topk        = 100;
-    float    score_thres = 0.25f;
-    float    iou_thres   = 0.65f;
-
+    cv::Mat             res, image;
+    cv::Size            size = cv::Size{640, 640};
     std::vector<Object> objs;
 
     cv::namedWindow("result", cv::WINDOW_AUTOSIZE);
@@ -93,7 +93,7 @@ int main(int argc, char** argv)
             auto start = std::chrono::system_clock::now();
             yolov8->infer();
             auto end = std::chrono::system_clock::now();
-            yolov8->postprocess(objs, score_thres, iou_thres, topk, num_labels);
+            yolov8->postprocess(objs);
             yolov8->draw_objects(image, res, objs, CLASS_NAMES, COLORS);
             auto tc = (double)std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.;
             printf("cost %2.4lf ms\n", tc);
@@ -104,14 +104,14 @@ int main(int argc, char** argv)
         }
     }
     else {
-        for (auto& path : imagePathList) {
+        for (auto& p : imagePathList) {
             objs.clear();
-            image = cv::imread(path);
+            image = cv::imread(p);
             yolov8->copy_from_Mat(image, size);
             auto start = std::chrono::system_clock::now();
             yolov8->infer();
             auto end = std::chrono::system_clock::now();
-            yolov8->postprocess(objs, score_thres, iou_thres, topk, num_labels);
+            yolov8->postprocess(objs);
             yolov8->draw_objects(image, res, objs, CLASS_NAMES, COLORS);
             auto tc = (double)std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.;
             printf("cost %2.4lf ms\n", tc);
