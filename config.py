@@ -162,6 +162,9 @@ COLORS = {
     for i, cls in enumerate(CLASSES_DET)
 }
 
+# segment model classes
+CLASSES_SEG = CLASSES_DET
+
 # colors for segment masks
 MASK_COLORS = np.array([(255, 56, 56), (255, 157, 151), (255, 112, 31),
                         (255, 178, 29), (207, 210, 49), (72, 249, 10),
