@@ -80,7 +80,7 @@ And build:
 ``` shell
 export root=${PWD}
 cd src/detect/normal
-mkdir build
+mkdir build && cd build
 cmake ..
 make
 mv yolov8 ${root}
