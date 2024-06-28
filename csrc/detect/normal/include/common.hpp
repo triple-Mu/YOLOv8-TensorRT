@@ -5,9 +5,8 @@
 #ifndef DETECT_NORMAL_COMMON_HPP
 #define DETECT_NORMAL_COMMON_HPP
 #include "NvInfer.h"
+#include "filesystem.hpp"
 #include "opencv2/opencv.hpp"
-#include <sys/stat.h>
-#include <unistd.h>
 
 #define CHECK(call)                                                                                                    \
     do {                                                                                                               \
@@ -87,33 +86,6 @@ inline int type_to_size(const nvinfer1::DataType& dataType)
 inline static float clamp(float val, float min, float max)
 {
     return val > min ? (val < max ? val : max) : min;
-}
-
-inline bool IsPathExist(const std::string& path)
-{
-    if (access(path.c_str(), 0) == F_OK) {
-        return true;
-    }
-    return false;
-}
-
-inline bool IsFile(const std::string& path)
-{
-    if (!IsPathExist(path)) {
-        printf("%s:%d %s not exist\n", __FILE__, __LINE__, path.c_str());
-        return false;
-    }
-    struct stat buffer;
-    return (stat(path.c_str(), &buffer) == 0 && S_ISREG(buffer.st_mode));
-}
-
-inline bool IsFolder(const std::string& path)
-{
-    if (!IsPathExist(path)) {
-        return false;
-    }
-    struct stat buffer;
-    return (stat(path.c_str(), &buffer) == 0 && S_ISDIR(buffer.st_mode));
 }
 
 namespace det {
