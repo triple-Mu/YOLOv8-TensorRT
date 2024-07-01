@@ -83,20 +83,6 @@ python3 export-det.py \
 
 You will get an onnx model whose prefix is the same as input weights.
 
-###  Just Taste First
-
-If you just want to taste first, you can download the onnx model which are exported by `YOLOv8` package and modified by me.
-
-[**YOLOv8-n**](https://triplemu-shared.oss-cn-beijing.aliyuncs.com/models/yolov8n.onnx?OSSAccessKeyId=LTAI5tNk9iiMqhFC64jCcgpv&Expires=2690974569&Signature=3ct9pnRygBduWdgAtfKOQAt4PeU%3D)
-
-[**YOLOv8-s**](https://triplemu-shared.oss-cn-beijing.aliyuncs.com/models/yolov8s.onnx?OSSAccessKeyId=LTAI5tNk9iiMqhFC64jCcgpv&Expires=10000000001690974000&Signature=cbHjUwmRsYdvilcirzjBI6%2BzmvI%3D)
-
-[**YOLOv8-m**](https://triplemu-shared.oss-cn-beijing.aliyuncs.com/models/yolov8m.onnx?OSSAccessKeyId=LTAI5tNk9iiMqhFC64jCcgpv&Expires=101690974603&Signature=XnJnQqbKsnJSKSgqVQ41kxoeETU%3D)
-
-[**YOLOv8-l**](https://triplemu-shared.oss-cn-beijing.aliyuncs.com/models/yolov8l.onnx?OSSAccessKeyId=LTAI5tNk9iiMqhFC64jCcgpv&Expires=2690974619&Signature=djxvNzcaFosHrMS5ylWh1R0%2Ff8E%3D)
-
-[**YOLOv8-x**](https://triplemu-shared.oss-cn-beijing.aliyuncs.com/models/yolov8x.onnx?OSSAccessKeyId=LTAI5tNk9iiMqhFC64jCcgpv&Expires=2690974637&Signature=DMmuT2wlfBzai%2BBpYJFcmNbkMKU%3D)
-
 # Build End2End Engine from ONNX
 ### 1. Build Engine by TensorRT ONNX Python api
 
