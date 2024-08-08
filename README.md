@@ -57,7 +57,7 @@ Besides, other scripts won't work.
 # Export End2End ONNX with NMS
 
 You can export your onnx model by `ultralytics` API and add postprocess such as bbox decoder and `NMS` into ONNX model at the same time.
-
+Use --dynamic for batching.
 ``` shell
 python3 export-det.py \
 --weights yolov8s.pt \
@@ -66,7 +66,7 @@ python3 export-det.py \
 --topk 100 \
 --opset 11 \
 --sim \
---input-shape 1 3 640 640 \
+--dynamic
 --device cuda:0
 ```
 
@@ -111,17 +111,14 @@ python3 build.py \
 
 You can modify `iou-thres` `conf-thres` `topk` by yourself.
 
-### 2. Export Engine by Trtexec Tools
+### 2. Export Engine by Trtexec Tools (for converting dynamic onnx please use this option)
 
 You can export TensorRT engine by [`trtexec`](https://github.com/NVIDIA/TensorRT/tree/main/samples/trtexec) tools.
 
 Usage:
 
 ``` shell
-/usr/src/tensorrt/bin/trtexec \
---onnx=yolov8s.onnx \
---saveEngine=yolov8s.engine \
---fp16
+trtexec --onnx=yolov8m.onnx --saveEngine=model.engine --fp16 --minShapes=images:1x3x640x640 --optShapes=images:8x3x640x640 --maxShapes=images:16x3x640x640
 ```
 
 **If you installed TensorRT by a debian package, then the installation path of `trtexec`
