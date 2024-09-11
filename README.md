@@ -202,6 +202,10 @@ Please see more information in [`Pose.md`](docs/Pose.md)
 
 Please see more information in [`Cls.md`](docs/Cls.md)
 
+# TensorRT Obb Deploy
+
+Please see more information in [`Obb.md`](docs/Obb.md)
+
 # DeepStream Detection Deploy
 
 See more in [`README.md`](csrc/deepstream/README.md)
