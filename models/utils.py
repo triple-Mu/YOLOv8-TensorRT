@@ -9,6 +9,9 @@ from numpy import ndarray
 SUFFIXS = ('.bmp', '.dng', '.jpeg', '.jpg', '.mpo', '.png', '.tif', '.tiff',
            '.webp', '.pfm')
 
+# angle scale
+ANGLE_SCALE = 1 / np.pi * 180.0
+
 
 def letterbox(im: ndarray,
               new_shape: Union[Tuple, List] = (640, 640),
@@ -93,17 +96,16 @@ def box_iou(box1: ndarray, box2: ndarray) -> float:
     x2 = min(x21, x22)
     y2 = min(y21, y22)
     inter_area = max(0, x2 - x1) * max(0, y2 - y1)
-    union_area = (x21 - x11) * (y21 - y11) + (x22 - x12) * (y22 - y12) - inter_area
+    union_area = (x21 - x11) * (y21 - y11) + (x22 - x12) * (y22 -
+                                                            y12) - inter_area
     return max(0, inter_area / union_area)
 
 
-def NMSBoxes(
-        boxes: ndarray,
-        scores: ndarray,
-        labels: ndarray,
-        iou_thres: float,
-        agnostic: bool = False
-):
+def NMSBoxes(boxes: ndarray,
+             scores: ndarray,
+             labels: ndarray,
+             iou_thres: float,
+             agnostic: bool = False):
     num_boxes = boxes.shape[0]
     order = np.argsort(scores)[::-1]
     boxes = boxes[order]
@@ -135,7 +137,7 @@ def det_postprocess(data: Tuple[ndarray, ndarray, ndarray, ndarray]):
     nums = num_dets.item()
     if nums == 0:
         return np.empty((0, 4), dtype=np.float32), np.empty(
-            (0,), dtype=np.float32), np.empty((0,), dtype=np.int32)
+            (0, ), dtype=np.float32), np.empty((0, ), dtype=np.int32)
     # check score negative
     scores[scores < 0] = 1 + scores[scores < 0]
     bboxes = bboxes[:nums]
@@ -200,7 +202,7 @@ def pose_postprocess(
     idx = scores > conf_thres
     if not idx.any():  # no bounding boxes or seg were created
         return np.empty((0, 4), dtype=np.float32), np.empty(
-            (0,), dtype=np.float32), np.empty((0, 0, 0), dtype=np.float32)
+            (0, ), dtype=np.float32), np.empty((0, 0, 0), dtype=np.float32)
     bboxes, scores, kpts = bboxes[idx], scores[idx], kpts[idx]
     xycenter, wh = np.split(bboxes, [
         2,
@@ -210,3 +212,31 @@ def pose_postprocess(
     cvbboxes, scores, kpts = cvbboxes[idx], scores[idx], kpts[idx]
     cvbboxes[:, 2:] += cvbboxes[:, :2]
     return cvbboxes, scores, kpts.reshape(idx.shape[0], -1, 3)
+
+
+def obb_postprocess(
+        data: Union[Tuple, ndarray],
+        conf_thres: float = 0.25,
+        iou_thres: float = 0.65) \
+        -> Tuple[ndarray, ndarray, ndarray]:
+    if isinstance(data, tuple):
+        assert len(data) == 1
+        data = data[0]
+    outputs = np.transpose(data[0], (1, 0))
+    num_cls = outputs.shape[-1] - 5
+    bboxes, scores, angles = np.split(outputs, [4, num_cls + 4], 1)
+    scores, labels = scores.max(-1), scores.argmax(-1)
+    scores, labels, angles = scores.squeeze(), labels.squeeze(
+    ), angles.squeeze()
+    idx = scores > conf_thres
+    if not idx.any():  # no obbs were created
+        return np.empty((0, 4, 2), dtype=np.float32), np.empty(
+            (0, ), dtype=np.float32), np.empty((0, ), dtype=np.int32)
+    bboxes, scores, labels, angles = bboxes[idx], scores[idx], labels[
+        idx], angles[idx] * ANGLE_SCALE
+    cvrbboxes = [[(xc, yc), (w, h), a]
+                 for (xc, yc, w, h), a in zip(bboxes, angles)]
+    idx = cv2.dnn.NMSBoxesRotated(cvrbboxes, scores, conf_thres, iou_thres)
+    points = np.array([cv2.boxPoints(cvrbboxes[i]) for i in idx],
+                      dtype=np.float32)
+    return points, scores, labels

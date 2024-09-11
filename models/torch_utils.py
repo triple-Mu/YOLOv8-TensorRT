@@ -5,6 +5,8 @@ import torch.nn.functional as F
 from torch import Tensor
 from torchvision.ops import batched_nms, nms
 
+from .utils import obb_postprocess as np_obb_postprocess
+
 
 def seg_postprocess(
         data: Tuple[Tensor],
@@ -61,7 +63,7 @@ def pose_postprocess(
 
 def det_postprocess(data: Tuple[Tensor, Tensor, Tensor, Tensor]):
     assert len(data) == 4
-    iou_thres: float = 0.65
+    iou_thres: float = 0.65  # noqa F841
     num_dets, bboxes, scores, labels = data[0][0], data[1][0], data[2][
         0], data[3][0]
     nums = num_dets.item()
@@ -75,6 +77,21 @@ def det_postprocess(data: Tuple[Tensor, Tensor, Tensor, Tensor]):
     labels = labels[:nums]
 
     return bboxes, scores, labels
+
+
+def obb_postprocess(
+        data: Union[Tuple, Tensor],
+        conf_thres: float = 0.25,
+        iou_thres: float = 0.65) \
+        -> Tuple[Tensor, Tensor, Tensor]:
+    if isinstance(data, tuple):
+        assert len(data) == 1
+        data = data[0]
+    device = data.device
+    points, scores, labels = np_obb_postprocess(data.cpu().numpy(), conf_thres,
+                                                iou_thres)
+    return torch.from_numpy(points).to(device), torch.from_numpy(scores).to(
+        device), torch.from_numpy(labels).to(device)
 
 
 def crop_mask(masks: Tensor, bboxes: Tensor) -> Tensor:

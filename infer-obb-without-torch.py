@@ -4,8 +4,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from config import CLASSES_DET, COLORS
-from models.utils import blob, det_postprocess, letterbox, path_to_list
+from config import CLASSES_OBB, COLORS_OBB
+from models.utils import blob, letterbox, obb_postprocess, path_to_list
 
 
 def main(args: argparse.Namespace) -> None:
@@ -32,37 +32,32 @@ def main(args: argparse.Namespace) -> None:
         bgr, ratio, dwdh = letterbox(bgr, (W, H))
         rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
         tensor = blob(rgb, return_seg=False)
-        dwdh = np.array(dwdh * 2, dtype=np.float32)
+        dwdh = np.array(dwdh, dtype=np.float32)
         tensor = np.ascontiguousarray(tensor)
         # inference
         data = Engine(tensor)
 
-        bboxes, scores, labels = det_postprocess(data)
-        if bboxes.size == 0:
-            # if no bounding box
+        points, scores, labels = obb_postprocess(data, args.conf_thres,
+                                                 args.iou_thres)
+        if points.size == 0:
+            # if no points
             print(f'{image}: no object!')
             continue
-        bboxes -= dwdh
-        bboxes /= ratio
+        points -= dwdh
+        points /= ratio
 
-        for (bbox, score, label) in zip(bboxes, scores, labels):
-            bbox = bbox.round().astype(np.int32).tolist()
-            cls_id = int(label)
-            cls = CLASSES_DET[cls_id]
-            color = COLORS[cls]
-
-            text = f'{cls}:{score:.3f}'
-            x1, y1, x2, y2 = bbox
-
-            (_w, _h), _bl = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX,
-                                            0.8, 1)
-            _y1 = min(y1 + 1, draw.shape[0])
-
-            cv2.rectangle(draw, (x1, y1), (x2, y2), color, 2)
-            cv2.rectangle(draw, (x1, _y1), (x1 + _w, _y1 + _h + _bl),
-                          (0, 0, 255), -1)
-            cv2.putText(draw, text, (x1, _y1 + _h), cv2.FONT_HERSHEY_SIMPLEX,
-                        0.75, (255, 255, 255), 2)
+        for (point, score, label) in zip(points, scores, labels):
+            point = point.round().astype(np.int32)
+            label = int(label)
+            score = float(score)
+            cls = CLASSES_OBB[label]
+            color = COLORS_OBB[cls]
+            cv2.polylines(draw, [point], True, color, 2)
+            cv2.putText(draw,
+                        f'{cls}:{score:.3f}', (point[0, 0], point[0, 1] - 2),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.75, [225, 255, 255],
+                        thickness=2)
 
         if args.show:
             cv2.imshow('result', draw)
@@ -82,6 +77,14 @@ def parse_args():
                         type=str,
                         default='./output',
                         help='Path to output file')
+    parser.add_argument('--conf-thres',
+                        type=float,
+                        default=0.25,
+                        help='Confidence threshold')
+    parser.add_argument('--iou-thres',
+                        type=float,
+                        default=0.65,
+                        help='Confidence threshold')
     parser.add_argument('--method',
                         type=str,
                         default='cudart',
