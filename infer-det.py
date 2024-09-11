@@ -53,12 +53,15 @@ def main(args: argparse.Namespace) -> None:
             text = f'{cls}:{score:.3f}'
             x1, y1, x2, y2 = bbox
 
-            (_w, _h), _bl = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 1)
+            (_w, _h), _bl = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX,
+                                            0.8, 1)
             _y1 = min(y1 + 1, draw.shape[0])
 
             cv2.rectangle(draw, (x1, y1), (x2, y2), color, 2)
-            cv2.rectangle(draw, (x1, _y1), (x1 + _w, _y1 + _h + _bl), (0, 0, 255), -1)
-            cv2.putText(draw, text, (x1, _y1 + _h), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2)
+            cv2.rectangle(draw, (x1, _y1), (x1 + _w, _y1 + _h + _bl),
+                          (0, 0, 255), -1)
+            cv2.putText(draw, text, (x1, _y1 + _h), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.75, (255, 255, 255), 2)
 
         if args.show:
             cv2.imshow('result', draw)
