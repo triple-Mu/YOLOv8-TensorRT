@@ -58,11 +58,11 @@ int main(int argc, char** argv)
 
     if (IsFile(path)) {
         std::string suffix = path.substr(path.find_last_of('.') + 1);
-        if (suffix == "jpg" || suffix == "jpeg" || suffix == "png") {
+        if (suffix == ".jpg" || suffix == ".jpeg" || suffix == ".png") {
             imagePathList.push_back(path);
         }
-        else if (suffix == "mp4" || suffix == "avi" || suffix == "m4v" || suffix == "mpeg" || suffix == "mov"
-                 || suffix == "mkv") {
+        else if (suffix == ".mp4" || suffix == ".avi" || suffix == ".m4v" || suffix == ".mpeg" || suffix == ".mov"
+                 || suffix == ".mkv") {
             isVideo = true;
         }
         else {

@@ -88,11 +88,11 @@ int main(int argc, char** argv)
 
     if (fs::exists(path)) {
         std::string suffix = path.extension();
-        if (suffix == "jpg" || suffix == "jpeg" || suffix == "png") {
+        if (suffix == ".jpg" || suffix == ".jpeg" || suffix == ".png") {
             imagePathList.push_back(path);
         }
-        else if (suffix == "mp4" || suffix == "avi" || suffix == "m4v" || suffix == "mpeg" || suffix == "mov"
-                 || suffix == "mkv") {
+        else if (suffix == ".mp4" || suffix == ".avi" || suffix == ".m4v" || suffix == ".mpeg" || suffix == ".mov"
+                 || suffix == ".mkv") {
             isVideo = true;
         }
         else {

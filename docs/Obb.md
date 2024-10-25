@@ -87,13 +87,16 @@ python3 infer-obb.py \
 - `--out-dir` : Where to save detection results images. It will not work when use `--show` flag.
 - `--device` : The CUDA deivce you use.
 
-## Inference with c++ (Under Construction)
+## Inference with c++
 
 You can infer with c++ in [`csrc/obb/normal`](../csrc/obb/normal) .
 
 ### Build:
 
-Please set you own librarys in [`CMakeLists.txt`](../csrc/obb/normal/CMakeLists.txt) and modify `CLASS_NAMES`  in [`main.cpp`](../csrc/obb/normal/main.cpp).
+Please set you own librarys in [`CMakeLists.txt`](../csrc/obb/normal/CMakeLists.txt) and modify `CLASS_NAMES`
+and `COLORS` in [`main.cpp`](../csrc/obb/normal/main.cpp).
+
+Besides, you can modify the postprocess parameters such as `num_labels` and `score_thres` and `iou_thres` and `topk`
 
 And build:
 
