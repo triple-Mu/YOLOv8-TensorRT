@@ -29,8 +29,8 @@ Usage:
 
 ```shell
 /usr/src/tensorrt/bin/trtexec \
---onnx=yolov8s.onnx \
---saveEngine=yolov8s.engine \
+--onnx=yolov7-tiny.onnx \
+--saveEngine=yolov7-tiny-nms.engine \
 --fp16
 ```
 
