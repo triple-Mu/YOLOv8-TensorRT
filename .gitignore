@@ -143,6 +143,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-./yolov7
+/yolov7
 data/
 data/*
