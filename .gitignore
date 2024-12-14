@@ -146,3 +146,5 @@ dmypy.json
 /yolov7
 data/
 data/*
+csrc/yolov7/jetson/output.mp4
+engines/yolov7-tiny-nms.trt
