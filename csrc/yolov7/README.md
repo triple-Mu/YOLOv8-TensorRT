@@ -30,7 +30,7 @@ Usage:
 ```shell
 /usr/src/tensorrt/bin/trtexec \
 --onnx=yolov7-tiny.onnx \
---saveEngine=yolov7-tiny-nms.engine \
+--saveEngine=yolov7-tiny-nms.trt \
 --fp16
 ```
 
@@ -38,8 +38,8 @@ and if on jeston, could set flag `--memPoolSize` lower:
 
 ```shell
 /usr/src/tensorrt/bin/trtexec \
---onnx=yolov8s.onnx \
---saveEngine=yolov8s.engine \
+--onnx=yolov7-tiny.onnx \
+--saveEngine=yolov7-tiny-nms.trt \
 --fp16 \
 --memPoolSize=workspace:1024MiB
 ```
