@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.12)
 set(CMAKE_CUDA_ARCHITECTURES 60 61 62 70 72 75 86 89 90)
 set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
 
-project(yolov8 LANGUAGES CXX CUDA)
+project(yolov7 LANGUAGES CXX CUDA)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3")
 set(CMAKE_CXX_STANDARD 14)
@@ -21,7 +21,7 @@ get_filename_component(CUDA_LIB_DIR ${CUDA_LIBRARIES} DIRECTORY)
 print_var(CUDA_LIB_DIR)
 
 # OpenCV
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 4 REQUIRED)
 print_var(OpenCV_LIBS)
 print_var(OpenCV_LIBRARIES)
 print_var(OpenCV_INCLUDE_DIRS)
