@@ -7,7 +7,6 @@
 #include "NvInferPlugin.h"
 #include "common.hpp"
 #include <fstream>
-
 using namespace pose;
 
 class YOLOv8_pose {
@@ -184,7 +183,19 @@ void YOLOv8_pose::letterbox(const cv::Mat& image, cv::Mat& out, cv::Size& size)
 
     cv::copyMakeBorder(tmp, tmp, top, bottom, left, right, cv::BORDER_CONSTANT, {114, 114, 114});
 
-    cv::dnn::blobFromImage(tmp, out, 1 / 255.f, cv::Size(), cv::Scalar(0, 0, 0), true, false, CV_32F);
+    out.create({1, 3, (int)inp_h, (int)inp_w}, CV_32F);
+
+    std::vector<cv::Mat> channels;
+    cv::split(tmp, channels);
+
+    cv::Mat c0((int)inp_h, (int)inp_w, CV_32F, (float*)out.data);
+    cv::Mat c1((int)inp_h, (int)inp_w, CV_32F, (float*)out.data + (int)inp_h * (int)inp_w);
+    cv::Mat c2((int)inp_h, (int)inp_w, CV_32F, (float*)out.data + (int)inp_h * (int)inp_w * 2);
+
+    channels[0].convertTo(c2, CV_32F, 1 / 255.f);
+    channels[1].convertTo(c1, CV_32F, 1 / 255.f);
+    channels[2].convertTo(c0, CV_32F, 1 / 255.f);
+
     this->pparam.ratio  = 1 / r;
     this->pparam.dw     = dw;
     this->pparam.dh     = dh;
@@ -197,8 +208,8 @@ void YOLOv8_pose::copy_from_Mat(const cv::Mat& image)
 {
     cv::Mat  nchw;
     auto&    in_binding = this->input_bindings[0];
-    auto     width      = in_binding.dims.d[3];
-    auto     height     = in_binding.dims.d[2];
+    int      width      = in_binding.dims.d[3];
+    int      height     = in_binding.dims.d[2];
     cv::Size size{width, height};
     this->letterbox(image, nchw, size);
 

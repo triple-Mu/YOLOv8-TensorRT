@@ -5,6 +5,8 @@
 #include "yolov8-pose.hpp"
 #include <chrono>
 
+namespace fs = ghc::filesystem;
+
 const std::vector<std::vector<unsigned int>> KPS_COLORS = {{0, 255, 0},
                                                            {0, 255, 0},
                                                            {0, 255, 0},
@@ -65,27 +67,30 @@ const std::vector<std::vector<unsigned int>> LIMB_COLORS = {{51, 153, 255},
 
 int main(int argc, char** argv)
 {
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s [engine_path] [image_path/image_dir/video_path]\n", argv[0]);
+        return -1;
+    }
+
     // cuda:0
     cudaSetDevice(0);
 
     const std::string engine_file_path{argv[1]};
-    const std::string path{argv[2]};
+    const fs::path    path{argv[2]};
 
     std::vector<std::string> imagePathList;
     bool                     isVideo{false};
 
-    assert(argc == 3);
-
     auto yolov8_pose = new YOLOv8_pose(engine_file_path);
     yolov8_pose->make_pipe(true);
 
-    if (IsFile(path)) {
-        std::string suffix = path.substr(path.find_last_of('.') + 1);
-        if (suffix == "jpg" || suffix == "jpeg" || suffix == "png") {
+    if (fs::exists(path)) {
+        std::string suffix = path.extension();
+        if (suffix == ".jpg" || suffix == ".jpeg" || suffix == ".png") {
             imagePathList.push_back(path);
         }
-        else if (suffix == "mp4" || suffix == "avi" || suffix == "m4v" || suffix == "mpeg" || suffix == "mov"
-                 || suffix == "mkv") {
+        else if (suffix == ".mp4" || suffix == ".avi" || suffix == ".m4v" || suffix == ".mpeg" || suffix == ".mov"
+                 || suffix == ".mkv") {
             isVideo = true;
         }
         else {
@@ -93,8 +98,8 @@ int main(int argc, char** argv)
             std::abort();
         }
     }
-    else if (IsFolder(path)) {
-        cv::glob(path + "/*.jpg", imagePathList);
+    else if (fs::is_directory(path)) {
+        cv::glob(path.string() + "/*.jpg", imagePathList);
     }
 
     cv::Mat  res, image;
