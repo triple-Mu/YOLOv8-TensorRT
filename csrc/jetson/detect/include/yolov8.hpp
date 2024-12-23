@@ -108,6 +108,7 @@ YOLOv8::~YOLOv8()
         CHECK(cudaFreeHost(ptr));
     }
 }
+
 void YOLOv8::make_pipe(bool warmup)
 {
 
