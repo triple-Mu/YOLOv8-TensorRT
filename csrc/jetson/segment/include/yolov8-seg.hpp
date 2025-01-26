@@ -6,7 +6,6 @@
 #include "NvInferPlugin.h"
 #include "common.hpp"
 #include <fstream>
-
 using namespace seg;
 
 class YOLOv8_seg {
@@ -194,8 +193,8 @@ void YOLOv8_seg::copy_from_Mat(const cv::Mat& image)
 {
     cv::Mat  nchw;
     auto&    in_binding = this->input_bindings[0];
-    auto     width      = in_binding.dims.d[3];
-    auto     height     = in_binding.dims.d[2];
+    int      width      = in_binding.dims.d[3];
+    int      height     = in_binding.dims.d[2];
     cv::Size size{width, height};
     this->letterbox(image, nchw, size);
 
