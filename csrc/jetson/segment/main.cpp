@@ -5,6 +5,8 @@
 #include "yolov8-seg.hpp"
 #include <chrono>
 
+namespace fs = ghc::filesystem;
+
 const std::vector<std::string> CLASS_NAMES = {
     "person",         "bicycle",    "car",           "motorcycle",    "airplane",     "bus",           "train",
     "truck",          "boat",       "traffic light", "fire hydrant",  "stop sign",    "parking meter", "bench",
@@ -42,27 +44,30 @@ const std::vector<std::vector<unsigned int>> MASK_COLORS = {
 
 int main(int argc, char** argv)
 {
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s [engine_path] [image_path/image_dir/video_path]\n", argv[0]);
+        return -1;
+    }
+
     // cuda:0
     cudaSetDevice(0);
 
     const std::string engine_file_path{argv[1]};
-    const std::string path{argv[2]};
+    const fs::path    path{argv[2]};
 
     std::vector<std::string> imagePathList;
     bool                     isVideo{false};
 
-    assert(argc == 3);
+    auto yolov8_seg = new YOLOv8_seg(engine_file_path);
+    yolov8_seg->make_pipe(true);
 
-    auto yolov8 = new YOLOv8_seg(engine_file_path);
-    yolov8->make_pipe(true);
-
-    if (IsFile(path)) {
-        std::string suffix = path.substr(path.find_last_of('.') + 1);
-        if (suffix == "jpg" || suffix == "jpeg" || suffix == "png") {
+    if (fs::exists(path)) {
+        std::string suffix = path.extension();
+        if (suffix == ".jpg" || suffix == ".jpeg" || suffix == ".png") {
             imagePathList.push_back(path);
         }
-        else if (suffix == "mp4" || suffix == "avi" || suffix == "m4v" || suffix == "mpeg" || suffix == "mov"
-                 || suffix == "mkv") {
+        else if (suffix == ".mp4" || suffix == ".avi" || suffix == ".m4v" || suffix == ".mpeg" || suffix == ".mov"
+                 || suffix == ".mkv") {
             isVideo = true;
         }
         else {
@@ -70,8 +75,8 @@ int main(int argc, char** argv)
             std::abort();
         }
     }
-    else if (IsFolder(path)) {
-        cv::glob(path + "/*.jpg", imagePathList);
+    else if (fs::is_directory(path)) {
+        cv::glob(path.string() + "/*.jpg", imagePathList);
     }
 
     cv::Mat  res, image;
@@ -96,12 +101,12 @@ int main(int argc, char** argv)
         }
         while (cap.read(image)) {
             objs.clear();
-            yolov8->copy_from_Mat(image, size);
+            yolov8_seg->copy_from_Mat(image, size);
             auto start = std::chrono::system_clock::now();
-            yolov8->infer();
+            yolov8_seg->infer();
             auto end = std::chrono::system_clock::now();
-            yolov8->postprocess(objs, score_thres, iou_thres, topk, seg_channels, seg_h, seg_w);
-            yolov8->draw_objects(image, res, objs, CLASS_NAMES, COLORS, MASK_COLORS);
+            yolov8_seg->postprocess(objs, score_thres, iou_thres, topk, seg_channels, seg_h, seg_w);
+            yolov8_seg->draw_objects(image, res, objs, CLASS_NAMES, COLORS, MASK_COLORS);
             auto tc = (double)std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.;
             printf("cost %2.4lf ms\n", tc);
             cv::imshow("result", res);
@@ -114,12 +119,12 @@ int main(int argc, char** argv)
         for (auto& path : imagePathList) {
             objs.clear();
             image = cv::imread(path);
-            yolov8->copy_from_Mat(image, size);
+            yolov8_seg->copy_from_Mat(image, size);
             auto start = std::chrono::system_clock::now();
-            yolov8->infer();
+            yolov8_seg->infer();
             auto end = std::chrono::system_clock::now();
-            yolov8->postprocess(objs, score_thres, iou_thres, topk, seg_channels, seg_h, seg_w);
-            yolov8->draw_objects(image, res, objs, CLASS_NAMES, COLORS, MASK_COLORS);
+            yolov8_seg->postprocess(objs, score_thres, iou_thres, topk, seg_channels, seg_h, seg_w);
+            yolov8_seg->draw_objects(image, res, objs, CLASS_NAMES, COLORS, MASK_COLORS);
             auto tc = (double)std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.;
             printf("cost %2.4lf ms\n", tc);
             cv::imshow("result", res);
@@ -127,6 +132,6 @@ int main(int argc, char** argv)
         }
     }
     cv::destroyAllWindows();
-    delete yolov8;
+    delete yolov8_seg;
     return 0;
 }
