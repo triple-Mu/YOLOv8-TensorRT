@@ -48,9 +48,7 @@ class EngineBuilder:
         builder = trt.Builder(logger)
         config = builder.create_builder_config()
 
-        # ปรับแต่งการจัดการ Memory Pool สำหรับ TensorRT 8 และ 10
         if major_version >= 10:
-            # TensorRT 10 ใช้ memory pool แยกชัดเจน
             config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE,
                                          total_memory // 2)
             config.set_memory_pool_limit(trt.MemoryPoolType.DLA_MANAGED_SRAM,
@@ -75,14 +73,12 @@ class EngineBuilder:
             config.set_flag(trt.BuilderFlag.FP16)
         self.weight = self.checkpoint.with_suffix('.engine')
 
-        # ปรับแต่ง Profiling Verbosity สำหรับ TensorRT 8 และ 10
         if with_profiling:
             if major_version <= 8:
                 config.profiling_verbosity = trt.ProfilingVerbosity.VERBOSE
             else:
                 config.profiling_verbosity = trt.ProfilingVerbosity.DETAILED
 
-        # ปรับแต่งการสร้าง Engine สำหรับ TensorRT 8 และ 10
         if major_version >= 8:
             serialized_engine = builder.build_serialized_network(
                 network, config)
@@ -153,7 +149,6 @@ class EngineBuilder:
         conf_thres: float = 0.25,
         topk: int = 100,
     ):
-        # คงロジックไว้เหมือนเดิมสำหรับ build_from_api
         assert not self.seg
         from .api import SPPF, C2f, Conv, Detect, get_depth, get_width
 
