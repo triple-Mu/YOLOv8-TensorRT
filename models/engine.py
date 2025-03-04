@@ -10,6 +10,11 @@ import torch
 
 os.environ['CUDA_MODULE_LOADING'] = 'LAZY'
 
+tensorrt_version = trt.__version__
+major_version = int(tensorrt_version.split('.')[0])
+minor_version = int(tensorrt_version.split('.')[1])
+device = torch.cuda.current_device()
+total_memory = torch.cuda.get_device_properties(device).total_memory
 
 class EngineBuilder:
     seg = False
@@ -41,8 +46,12 @@ class EngineBuilder:
         trt.init_libnvinfer_plugins(logger, namespace='')
         builder = trt.Builder(logger)
         config = builder.create_builder_config()
-        config.max_workspace_size = torch.cuda.get_device_properties(
-            self.device).total_memory
+
+        if major_version >= 8:  
+            config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, total_memory)
+        else:  
+            config.max_workspace_size = total_memory
+
         flag = (1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
         network = builder.create_network(flag)
 
@@ -59,8 +68,15 @@ class EngineBuilder:
 
         if with_profiling:
             config.profiling_verbosity = trt.ProfilingVerbosity.DETAILED
-        with self.builder.build_engine(self.network, config) as engine:
-            self.weight.write_bytes(engine.serialize())
+
+        if major_version > 8 or (major_version == 8 and minor_version >= 5):
+            serialized_engine = self.builder.build_serialized_network(self.network, config)
+            self.runtime = trt.Runtime(trt.Logger(trt.Logger.WARNING))
+            engine = self.runtime.deserialize_cuda_engine(serialized_engine)
+        else:  
+            engine = self.builder.build_engine(self.network, config)
+        self.weight.write_bytes(engine.serialize())
+
         self.logger.log(
             trt.Logger.WARNING, f'Build tensorrt engine finish.\n'
             f'Save in {str(self.weight.absolute())}')
